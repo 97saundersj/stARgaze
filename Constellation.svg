@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="450" height="360" viewBox="0 0 450 360">
+  <rect width="450" height="360" fill="#0A0D1A"/>
+  <line x1="288.0" y1="43.0" x2="286.0" y2="87.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="307.0" y1="176.0" x2="307.0" y2="207.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="266.0" y1="176.0" x2="309.0" y2="102.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="286.0" y1="87.0" x2="310.0" y2="58.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="310.0" y1="58.0" x2="309.0" y2="102.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="92.0" y1="68.0" x2="92.0" y2="98.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="92.0" y1="98.0" x2="90.0" y2="153.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="92.0" y1="98.0" x2="128.0" y2="118.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="90.0" y1="153.0" x2="132.0" y2="146.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="132.0" y1="146.0" x2="127.0" y2="207.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="90.0" y1="153.0" x2="90.0" y2="205.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="90.0" y1="205.0" x2="48.0" y2="208.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="309.0" y1="22.0" x2="310.0" y2="58.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="309.0" y1="102.0" x2="352.0" y2="176.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="128.0" y1="118.0" x2="154.0" y2="102.0" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="266.0" y1="176.0" x2="352.0" y2="176.0" stroke="#D4AF37" stroke-width="2"/>
+  <circle cx="92.0" cy="68.0" r="5.0" fill="#FFFFFF"/>
+  <circle cx="92.0" cy="98.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="90.0" cy="153.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="132.0" cy="146.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="127.0" cy="207.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="90.0" cy="205.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="48.0" cy="208.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="154.0" cy="102.0" r="7.0" fill="#ffd700"/>
+  <circle cx="286.0" cy="87.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="309.0" cy="22.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="310.0" cy="58.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="309.0" cy="102.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="266.0" cy="176.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="352.0" cy="176.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="307.0" cy="207.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="128.0" cy="118.0" r="4.0" fill="#FFFFFF"/>
+  <circle cx="288.0" cy="43.0" r="4.0" fill="#FFFFFF"/>
+</svg>
