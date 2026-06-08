@@ -1,7 +1,11 @@
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+// GitHub Pages serves project sites at /stARgaze/
+const repoBase = '/stARgaze/';
+
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? repoBase : '/',
   plugins: [basicSsl()],
   server: {
     host: true,
@@ -11,4 +15,4 @@ export default defineConfig({
     host: true,
     https: true,
   },
-});
+}));
