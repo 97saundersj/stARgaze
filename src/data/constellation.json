@@ -1,0 +1,46 @@
+{
+  "name": "The Lovers",
+  "canvas": { "width": 450, "height": 360 },
+  "worldWidth": 0.8,
+  "nodes": [
+    { "id": "k_head", "x": 92, "y": 68, "color": "#FFFFFF", "radius": 0.012 },
+    { "id": "k_shoulder", "x": 92, "y": 98, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "k_waist", "x": 90, "y": 153, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "k_hand", "x": 128, "y": 118, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "ring", "x": 154, "y": 102, "color": "#FFD700", "radius": 0.014 },
+    { "id": "k_front_knee", "x": 132, "y": 146, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "k_front_foot", "x": 127, "y": 207, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "k_back_knee", "x": 90, "y": 205, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "k_back_foot", "x": 48, "y": 208, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_head_top", "x": 288, "y": 43, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_head_left", "x": 286, "y": 87, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_head_right", "x": 309, "y": 22, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_head_bottom", "x": 310, "y": 58, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_shoulder_right", "x": 309, "y": 102, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_hem_left", "x": 266, "y": 176, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_hem_right", "x": 352, "y": 176, "color": "#FFFFFF", "radius": 0.01 },
+    { "id": "s_foot", "x": 307, "y": 207, "color": "#FFFFFF", "radius": 0.01 }
+  ],
+  "edges": [
+    { "id": "e_k1", "from": "k_head", "to": "k_shoulder" },
+    { "id": "e_k2", "from": "k_shoulder", "to": "k_waist" },
+    { "id": "e_k3", "from": "k_shoulder", "to": "k_hand" },
+    { "id": "e_k_ring", "from": "k_hand", "to": "ring" },
+    { "id": "e_k4", "from": "k_waist", "to": "k_front_knee" },
+    { "id": "e_k5", "from": "k_front_knee", "to": "k_front_foot" },
+    { "id": "e_k6", "from": "k_waist", "to": "k_back_knee" },
+    { "id": "e_k7", "from": "k_back_knee", "to": "k_back_foot" },
+    { "id": "e_s1", "from": "s_head_top", "to": "s_head_left" },
+    { "id": "e_s2", "from": "s_head_left", "to": "s_head_bottom" },
+    { "id": "e_s3", "from": "s_head_right", "to": "s_head_bottom" },
+    { "id": "e_s4", "from": "s_head_bottom", "to": "s_shoulder_right" },
+    { "id": "e_s5", "from": "s_hem_left", "to": "s_shoulder_right" },
+    { "id": "e_s6", "from": "s_shoulder_right", "to": "s_hem_right" },
+    { "id": "e_s7", "from": "s_hem_left", "to": "s_hem_right" },
+    { "id": "e_s8", "from": "s_hem_left", "to": "s_foot" }
+  ],
+  "edgeOrder": [
+    "e_k1", "e_k2", "e_k3", "e_k_ring", "e_k4", "e_k5", "e_k6", "e_k7",
+    "e_s1", "e_s2", "e_s3", "e_s4", "e_s5", "e_s6", "e_s7", "e_s8"
+  ]
+}

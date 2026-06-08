@@ -1,0 +1,21 @@
+{
+  "name": "stargaze",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "three": "^0.172.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.184.1",
+    "@types/webxr": "^0.5.24",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
