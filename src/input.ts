@@ -14,6 +14,8 @@ export function createInputHandlers(
   onTap: (result: TapResult) => void,
   onAnyTap: () => void,
   getPhase: () => string,
+  isSkyLookActive: () => boolean,
+  trySkyStarTap: ((clientX: number, clientY: number) => boolean) | null,
 ): { dispose: () => void; updateXR: (frame: XRFrame) => void } {
   const raycaster = new THREE.Raycaster();
   raycaster.near = 0.01;
@@ -127,9 +129,11 @@ export function createInputHandlers(
     );
   }
 
-  function handlePointerInteraction(event: PointerEvent): void {
-    if (renderer.xr.isPresenting) return;
+  function handlePointerInteraction(event: PointerEvent): boolean {
+    if (renderer.xr.isPresenting) return false;
+    if (trySkyStarTap?.(event.clientX, event.clientY)) return true;
     handleTapResult(castFromNdc(ndcFromEvent(event)));
+    return false;
   }
 
   function endDrag(event: PointerEvent): void {
@@ -140,6 +144,8 @@ export function createInputHandlers(
   }
 
   function onPointerDown(event: PointerEvent): void {
+    if (isSkyLookActive()) return;
+
     const phase = getPhase();
     if (phase === 'theQuestion') {
       onAnyTap();
@@ -154,6 +160,7 @@ export function createInputHandlers(
   }
 
   function onPointerMove(event: PointerEvent): void {
+    if (isSkyLookActive()) return;
     if (!isDragging || activePointerId !== event.pointerId) return;
     if (getPhase() !== 'findStars' || renderer.xr.isPresenting) return;
 
@@ -161,10 +168,12 @@ export function createInputHandlers(
   }
 
   function onPointerUp(event: PointerEvent): void {
+    if (isSkyLookActive()) return;
     endDrag(event);
   }
 
   function onPointerCancel(event: PointerEvent): void {
+    if (isSkyLookActive()) return;
     endDrag(event);
   }
 
@@ -174,6 +183,27 @@ export function createInputHandlers(
       onAnyTap();
       return;
     }
+
+    if (trySkyStarTap && renderer.xr.isPresenting) {
+      const referenceSpace = renderer.xr.getReferenceSpace();
+      if (referenceSpace) {
+        const pose = event.frame.getPose(event.inputSource.targetRaySpace, referenceSpace);
+        if (pose) {
+          const headCamera = renderer.xr.getCamera();
+          const tip = new THREE.Vector3(
+            pose.transform.position.x,
+            pose.transform.position.y,
+            pose.transform.position.z,
+          );
+          tip.project(headCamera);
+          const rect = renderer.domElement.getBoundingClientRect();
+          const clientX = ((tip.x + 1) / 2) * rect.width + rect.left;
+          const clientY = ((-tip.y + 1) / 2) * rect.height + rect.top;
+          if (trySkyStarTap(clientX, clientY)) return;
+        }
+      }
+    }
+
     if (phase !== 'findStars') return;
 
     const result = castFromXRInput(event.frame, event.inputSource);

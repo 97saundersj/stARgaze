@@ -1,0 +1,102 @@
+{
+  "constellations": [
+    {
+      "id": "ori",
+      "name": "Orion",
+      "stars": [
+        { "id": "betelgeuse", "name": "Betelgeuse", "raHours": 5.919, "decDeg": 7.407, "mag": 0.45 },
+        { "id": "rigel", "name": "Rigel", "raHours": 5.242, "decDeg": -8.202, "mag": 0.13 },
+        { "id": "bellatrix", "name": "Bellatrix", "raHours": 5.419, "decDeg": 6.35, "mag": 1.64 },
+        { "id": "mintaka", "name": "Mintaka", "raHours": 5.533, "decDeg": -0.3, "mag": 2.23 },
+        { "id": "alnilam", "name": "Alnilam", "raHours": 5.603, "decDeg": -1.202, "mag": 1.69 },
+        { "id": "alnitak", "name": "Alnitak", "raHours": 5.679, "decDeg": -1.943, "mag": 1.77 },
+        { "id": "saiph", "name": "Saiph", "raHours": 5.795, "decDeg": -9.67, "mag": 2.06 }
+      ],
+      "lines": [
+        ["betelgeuse", "bellatrix"],
+        ["bellatrix", "mintaka"],
+        ["mintaka", "alnilam"],
+        ["alnilam", "alnitak"],
+        ["alnitak", "rigel"],
+        ["rigel", "saiph"],
+        ["saiph", "betelgeuse"],
+        ["betelgeuse", "rigel"]
+      ]
+    },
+    {
+      "id": "uma",
+      "name": "Ursa Major",
+      "stars": [
+        { "id": "dubhe", "name": "Dubhe", "raHours": 11.062, "decDeg": 61.751, "mag": 1.79 },
+        { "id": "merak", "name": "Merak", "raHours": 11.031, "decDeg": 56.383, "mag": 2.37 },
+        { "id": "phecda", "name": "Phecda", "raHours": 11.897, "decDeg": 53.695, "mag": 2.44 },
+        { "id": "megrez", "name": "Megrez", "raHours": 12.257, "decDeg": 57.033, "mag": 3.32 },
+        { "id": "alioth", "name": "Alioth", "raHours": 12.9, "decDeg": 55.96, "mag": 1.77 },
+        { "id": "mizar", "name": "Mizar", "raHours": 13.399, "decDeg": 54.925, "mag": 2.27 },
+        { "id": "alkaid", "name": "Alkaid", "raHours": 13.792, "decDeg": 49.313, "mag": 1.86 }
+      ],
+      "lines": [
+        ["dubhe", "merak"],
+        ["merak", "phecda"],
+        ["phecda", "megrez"],
+        ["megrez", "alioth"],
+        ["alioth", "mizar"],
+        ["mizar", "alkaid"],
+        ["megrez", "dubhe"]
+      ]
+    },
+    {
+      "id": "cas",
+      "name": "Cassiopeia",
+      "stars": [
+        { "id": "caph", "name": "Caph", "raHours": 0.153, "decDeg": 59.15, "mag": 2.28 },
+        { "id": "schedar", "name": "Schedar", "raHours": 0.675, "decDeg": 56.537, "mag": 2.24 },
+        { "id": "gamma_cas", "name": "Gamma Cas", "raHours": 0.945, "decDeg": 60.717, "mag": 2.47 },
+        { "id": "ruchbah", "name": "Ruchbah", "raHours": 1.433, "decDeg": 60.235, "mag": 2.66 },
+        { "id": "segin", "name": "Segin", "raHours": 1.906, "decDeg": 63.67, "mag": 3.35 }
+      ],
+      "lines": [
+        ["caph", "schedar"],
+        ["schedar", "gamma_cas"],
+        ["gamma_cas", "ruchbah"],
+        ["ruchbah", "segin"]
+      ]
+    },
+    {
+      "id": "leo",
+      "name": "Leo",
+      "stars": [
+        { "id": "regulus", "name": "Regulus", "raHours": 10.139, "decDeg": 11.967, "mag": 1.35 },
+        { "id": "algieba", "name": "Algieba", "raHours": 10.333, "decDeg": 19.841, "mag": 2.28 },
+        { "id": "zosma", "name": "Zosma", "raHours": 11.237, "decDeg": 20.524, "mag": 2.56 },
+        { "id": "chertan", "name": "Chertan", "raHours": 11.248, "decDeg": 15.429, "mag": 3.33 },
+        { "id": "denebola", "name": "Denebola", "raHours": 11.818, "decDeg": 14.572, "mag": 2.14 }
+      ],
+      "lines": [
+        ["regulus", "algieba"],
+        ["algieba", "zosma"],
+        ["zosma", "denebola"],
+        ["denebola", "chertan"],
+        ["chertan", "regulus"]
+      ]
+    },
+    {
+      "id": "cyg",
+      "name": "Cygnus",
+      "stars": [
+        { "id": "deneb", "name": "Deneb", "raHours": 20.691, "decDeg": 45.28, "mag": 1.25 },
+        { "id": "sadr", "name": "Sadr", "raHours": 20.37, "decDeg": 40.257, "mag": 2.23 },
+        { "id": "gienah", "name": "Gienah", "raHours": 20.77, "decDeg": 33.97, "mag": 2.48 },
+        { "id": "delta_cyg", "name": "Delta Cyg", "raHours": 19.749, "decDeg": 45.131, "mag": 2.87 },
+        { "id": "albireo", "name": "Albireo", "raHours": 19.512, "decDeg": 27.96, "mag": 3.05 }
+      ],
+      "lines": [
+        ["deneb", "sadr"],
+        ["sadr", "albireo"],
+        ["sadr", "gienah"],
+        ["deneb", "delta_cyg"],
+        ["delta_cyg", "albireo"]
+      ]
+    }
+  ]
+}

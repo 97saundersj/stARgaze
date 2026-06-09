@@ -3,12 +3,16 @@ import { ConstellationScene } from './constellationScene';
 import { createPhaseController } from './phases';
 import { createInputHandlers } from './input';
 import { createMessageOverlay } from './messageOverlay';
+import { createSkyModeController } from './sky/skyMode';
+import type { SkyTapResult } from './sky/SkyScene';
 import {
   ARPlacement,
   createARButton,
   isARSupported,
   setupXRRenderer,
 } from './xr';
+
+type AppMode = 'preview' | 'sky' | 'ar';
 
 const overlayEl = document.getElementById('overlay')!;
 const instructionEl = document.getElementById('instruction')!;
@@ -20,6 +24,8 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 const PREVIEW_CAMERA = new THREE.Vector3(0, 1.4, 0);
 const PREVIEW_TARGET = new THREE.Vector3(0, 1.4, -1.5);
+const PREVIEW_FAR = 20;
+const SKY_FAR = 1000;
 
 camera.position.copy(PREVIEW_CAMERA);
 camera.lookAt(PREVIEW_TARGET);
@@ -35,8 +41,14 @@ setupXRRenderer(renderer);
 const constellationScene = new ConstellationScene();
 scene.add(constellationScene.group);
 
+const skyMode = createSkyModeController();
 const placement = new ARPlacement(renderer, constellationScene.group);
-let isPreview = true;
+
+let appMode: AppMode = 'preview';
+let previewPlaced = false;
+let skyBackgroundActive = false;
+let arNorthCaptured = false;
+let skyButton: HTMLButtonElement | null = null;
 
 const phaseController = createPhaseController(constellationScene, {
   onPhaseChange: (phase) => {
@@ -70,6 +82,30 @@ const phaseController = createPhaseController(constellationScene, {
   },
 });
 
+function getHeadCamera(): THREE.Camera {
+  return renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+}
+
+function handleSkyStarTap(result: SkyTapResult): void {
+  if (result.constellationComplete) {
+    instructionEl.textContent = `${result.constellationName} complete! Tap another constellation's stars.`;
+  } else {
+    instructionEl.textContent = `Join ${result.constellationName}: ${result.foundInConstellation}/${result.totalInConstellation} stars — tap ${result.starName}`;
+  }
+  instructionEl.classList.remove('fade-out');
+}
+
+function trySkyStarTap(clientX: number, clientY: number): boolean {
+  if (!skyBackgroundActive) return false;
+  const result = skyMode.tryTapAt(clientX, clientY, renderer.domElement);
+  if (!result) return false;
+  handleSkyStarTap(result);
+  return true;
+}
+
+skyMode.setCameraProvider(getHeadCamera);
+skyMode.setStarTapHandler(handleSkyStarTap);
+
 const inputHandlers = createInputHandlers(
   renderer,
   camera,
@@ -79,10 +115,116 @@ const inputHandlers = createInputHandlers(
   },
   () => phaseController.handleTap(),
   () => phaseController.phase,
+  () => appMode === 'sky',
+  trySkyStarTap,
 );
 
 let lastTime = performance.now();
-let previewPlaced = false;
+
+function updateSkyBanner(): void {
+  if (!skyBackgroundActive) return;
+  const count = skyMode.skyScene.getVisibleStarCount();
+  const base =
+    appMode === 'ar'
+      ? 'AR with sky map — look around to find constellations'
+      : 'Sky map — drag or point your phone at the sky';
+  previewBanner.textContent = skyMode.errorMessage ?? `${base} (${count} stars visible)`;
+}
+
+async function enableSkyBackground(): Promise<void> {
+  if (skyBackgroundActive) return;
+
+  skyBackgroundActive = true;
+  scene.add(skyMode.skyScene.group);
+  camera.far = SKY_FAR;
+  camera.updateProjectionMatrix();
+  constellationScene.setPreviewBackground(scene, false);
+
+  await skyMode.start(renderer.domElement);
+  updateSkyBanner();
+}
+
+function disableSkyBackground(): void {
+  if (!skyBackgroundActive) return;
+
+  skyMode.stop();
+  scene.remove(skyMode.skyScene.group);
+  skyMode.loversOverlay.unmountConstellation(constellationScene.group, scene);
+  skyMode.loversOverlay.detachFromCamera(camera);
+  skyMode.skyScene.group.rotation.set(0, 0, 0);
+  arNorthCaptured = false;
+  skyBackgroundActive = false;
+  camera.far = PREVIEW_FAR;
+  camera.updateProjectionMatrix();
+}
+
+function mountLoversOverlay(): void {
+  skyMode.loversOverlay.mountConstellation(constellationScene.group);
+  skyMode.loversOverlay.attachToCamera(camera);
+}
+
+function unmountLoversOverlay(): void {
+  skyMode.loversOverlay.unmountConstellation(constellationScene.group, scene);
+  skyMode.loversOverlay.detachFromCamera(camera);
+}
+
+function setPreviewMode(): void {
+  appMode = 'preview';
+  disableSkyBackground();
+  renderer.setClearColor(0x0a0d1a, 1);
+  previewBanner.classList.remove('hidden');
+  previewBanner.textContent = 'Preview mode — open the HTTPS network URL on Android Chrome for AR';
+  constellationScene.setPreviewBackground(scene, true);
+  placement.reset();
+  placement.placeForPreview();
+  previewPlaced = true;
+  instructionEl.textContent = 'Tap or drag across the stars of the constellation.';
+  instructionEl.classList.remove('fade-out');
+}
+
+async function enterSkyMode(): Promise<void> {
+  appMode = 'sky';
+  previewPlaced = false;
+  previewBanner.classList.remove('hidden');
+
+  await enableSkyBackground();
+  mountLoversOverlay();
+  skyMode.setLookActive(true);
+
+  instructionEl.textContent =
+    'Drag to look around. Tap stars to trace a constellation — lines appear as you join them.';
+  instructionEl.classList.remove('fade-out');
+  updateSkyBanner();
+}
+
+function exitSkyMode(): void {
+  if (appMode !== 'sky') return;
+  setPreviewMode();
+}
+
+async function enterARMode(): Promise<void> {
+  appMode = 'ar';
+  previewPlaced = false;
+  previewBanner.classList.remove('hidden');
+  unmountLoversOverlay();
+
+  await enableSkyBackground();
+  skyMode.setLookActive(false);
+  arNorthCaptured = false;
+  renderer.setClearColor(0x0a0d1a, 0);
+  constellationScene.setPreviewBackground(scene, false);
+  placement.reset();
+
+  instructionEl.textContent =
+    'Tap sky stars to trace a constellation. Tap the Lovers panel stars for the proposal.';
+  instructionEl.classList.remove('fade-out');
+  updateSkyBanner();
+}
+
+function exitARMode(): void {
+  constellationScene.hideARMessage();
+  setPreviewMode();
+}
 
 function animate(): void {
   renderer.setAnimationLoop((time: number, frame?: XRFrame) => {
@@ -98,7 +240,23 @@ function animate(): void {
         placement.update(frame, referenceSpace);
       }
       inputHandlers.updateXR(frame);
-    } else if (isPreview) {
+
+      if (skyBackgroundActive) {
+        skyMode.update(time, dt);
+        const headCamera = renderer.xr.getCamera();
+        if (!arNorthCaptured) {
+          skyMode.captureArNorthOffset(headCamera);
+          arNorthCaptured = true;
+        }
+        skyMode.followSkyToCamera(headCamera, true);
+        if (time % 2000 < 20) updateSkyBanner();
+      }
+    } else if (appMode === 'sky' && skyBackgroundActive) {
+      skyMode.update(time, dt);
+      skyMode.applyCameraOrientation(camera);
+      skyMode.followSkyToCamera(camera, false);
+      if (time % 2000 < 20) updateSkyBanner();
+    } else if (appMode === 'preview') {
       if (!previewPlaced) {
         placement.placeForPreview();
         previewPlaced = true;
@@ -119,35 +277,51 @@ function onResize(): void {
 
 window.addEventListener('resize', onResize);
 
+function createSkyButton(): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.textContent = 'Sky Map';
+  button.className = 'mode-button';
+
+  button.addEventListener('click', async () => {
+    if (appMode === 'sky') {
+      exitSkyMode();
+      button.textContent = 'Sky Map';
+      return;
+    }
+
+    if (renderer.xr.isPresenting) {
+      const session = renderer.xr.getSession();
+      if (session) await session.end();
+    }
+
+    await enterSkyMode();
+    button.textContent = 'Exit Sky Map';
+  });
+
+  return button;
+}
+
 async function init(): Promise<void> {
   await isARSupported();
 
-  previewBanner.classList.remove('hidden');
-  isPreview = true;
-  constellationScene.setPreviewBackground(scene, true);
-  placement.placeForPreview();
-  previewPlaced = true;
+  setPreviewMode();
+
+  skyButton = createSkyButton();
+  arButtonContainer.appendChild(skyButton);
 
   createARButton(
     renderer,
     arButtonContainer,
     overlayEl,
-    () => {
-      previewBanner.classList.add('hidden');
-      isPreview = false;
-      previewPlaced = false;
-      constellationScene.setPreviewBackground(scene, false);
-      placement.reset();
+    async () => {
+      if (appMode === 'sky') {
+        if (skyButton) skyButton.textContent = 'Sky Map';
+      }
+      await enterARMode();
     },
     () => {
-      previewBanner.classList.remove('hidden');
-      isPreview = true;
-      previewPlaced = false;
-      constellationScene.setPreviewBackground(scene, true);
-      constellationScene.hideARMessage();
-      placement.reset();
-      placement.placeForPreview();
-      previewPlaced = true;
+      exitARMode();
+      if (skyButton) skyButton.textContent = 'Sky Map';
     },
   );
 
