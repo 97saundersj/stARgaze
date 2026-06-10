@@ -25,7 +25,10 @@ export class DeviceOrientationController {
   private gamma: number | null = null;
   private compassHeading: number | null = null;
   private alphaOffsetAngle = 0;
+  private orientationInitialized = false;
   readonly orientationQuaternion = new THREE.Quaternion();
+  readonly displayQuaternion = new THREE.Quaternion();
+  private static readonly ORIENTATION_SMOOTHING = 0.12;
 
   get isActive(): boolean {
     return this.listening;
@@ -35,9 +38,13 @@ export class DeviceOrientationController {
     return this.alpha !== null && this.beta !== null && this.gamma !== null;
   }
 
+  get hasCompassHeading(): boolean {
+    return this.compassHeading !== null;
+  }
+
   /** Y-axis rotation to align horizontal star catalog north with real north in WebXR. */
-  getSkyNorthOffsetRadians(viewerYawRadians: number): number {
-    if (this.compassHeading === null) return 0;
+  getSkyNorthOffsetRadians(viewerYawRadians: number): number | null {
+    if (this.compassHeading === null) return null;
     const compassRad = THREE.MathUtils.degToRad(this.compassHeading);
     return compassRad - viewerYawRadians;
   }
@@ -90,6 +97,7 @@ export class DeviceOrientationController {
 
     this.screenOrientation = window.screen?.orientation?.angle ?? window.orientation ?? 0;
     window.addEventListener('deviceorientation', this.onDeviceOrientation);
+    window.addEventListener('deviceorientationabsolute', this.onDeviceOrientation);
     window.addEventListener('orientationchange', this.onOrientationChange);
     this.listening = true;
   }
@@ -97,9 +105,12 @@ export class DeviceOrientationController {
   stop(): void {
     if (!this.listening) return;
     window.removeEventListener('deviceorientation', this.onDeviceOrientation);
+    window.removeEventListener('deviceorientationabsolute', this.onDeviceOrientation);
     window.removeEventListener('orientationchange', this.onOrientationChange);
     this.listening = false;
     this.alphaOffsetAngle = 0;
+    this.compassHeading = null;
+    this.orientationInitialized = false;
   }
 
   update(): void {
@@ -121,6 +132,16 @@ export class DeviceOrientationController {
     this.orientationQuaternion.multiply(
       SCREEN_ORIENT_QUAT.setFromAxisAngle(SCREEN_Z, -orientRad),
     );
+
+    if (!this.orientationInitialized) {
+      this.displayQuaternion.copy(this.orientationQuaternion);
+      this.orientationInitialized = true;
+    } else {
+      this.displayQuaternion.slerp(
+        this.orientationQuaternion,
+        DeviceOrientationController.ORIENTATION_SMOOTHING,
+      );
+    }
   }
 
   private onOrientationChange = (): void => {
@@ -135,6 +156,9 @@ export class DeviceOrientationController {
 
     if (typeof e.webkitCompassHeading === 'number' && !Number.isNaN(e.webkitCompassHeading)) {
       this.compassHeading = e.webkitCompassHeading;
+    } else if (e.absolute && e.alpha !== null) {
+      // Android Chrome: alpha is degrees clockwise from magnetic north when absolute.
+      this.compassHeading = e.alpha;
     }
   };
 }

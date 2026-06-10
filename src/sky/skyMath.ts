@@ -65,9 +65,3 @@ export function magnitudeToPointSize(mag: number): number {
   const size = 20 * Math.pow(10, -0.18 * mag);
   return THREE.MathUtils.clamp(size, 8, 28);
 }
-
-export function horizonOpacity(altitudeDeg: number): number {
-  if (altitudeDeg < 0) return 0;
-  if (altitudeDeg > 5) return 1;
-  return altitudeDeg / 5;
-}

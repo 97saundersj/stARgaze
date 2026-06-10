@@ -3,7 +3,6 @@ import starCatalog from '../data/starCatalog.json';
 import {
   altAzToWorldPosition,
   createObserver,
-  horizonOpacity,
   magnitudeToPointSize,
   magnitudeToRadius,
   SKY_SPHERE_RADIUS,
@@ -17,6 +16,9 @@ const LINE_RADIUS = 0.14;
 const LINE_GLOW_RADIUS = 0.28;
 const EDGE_ANIM_DURATION = 0.45;
 const FOUND_STAR_SCALE = 1.45;
+const HIT_RADIUS_MULTIPLIER = 14;
+const HIT_RADIUS_MIN = SKY_SPHERE_RADIUS * 0.03;
+const TAP_SNAP_RADIUS_PX = 56;
 
 export interface CatalogStar {
   id: string;
@@ -113,6 +115,7 @@ export class SkyScene {
   private readonly hitMeshes: THREE.Mesh[] = [];
   private readonly edgeAnimations = new Map<string, number>();
   private readonly raycaster = new THREE.Raycaster();
+  private readonly projectedStar = new THREE.Vector3();
   private positions = new Float32Array(0);
   private pointOpacities = new Float32Array(0);
   private points: THREE.Points | null = null;
@@ -182,14 +185,51 @@ export class SkyScene {
     return this.hitMeshes.filter((mesh) => mesh.visible);
   }
 
-  tapFromNdc(ndc: THREE.Vector2, camera: THREE.Camera): SkyTapResult | null {
+  tapFromNdc(
+    ndc: THREE.Vector2,
+    camera: THREE.Camera,
+    viewportWidth: number,
+    viewportHeight: number,
+  ): SkyTapResult | null {
     this.raycaster.setFromCamera(ndc, camera);
     this.raycaster.far = SKY_SPHERE_RADIUS * 1.5;
     const hits = this.raycaster.intersectObjects(this.getHitMeshes(), false);
-    if (hits.length === 0) return null;
+    if (hits.length > 0) {
+      const starId = hits[0].object.userData.starId as string;
+      return this.tapStar(starId);
+    }
 
-    const starId = hits[0].object.userData.starId as string;
-    return this.tapStar(starId);
+    const nearestStarId = this.findNearestVisibleStar(ndc, camera, viewportWidth, viewportHeight);
+    if (!nearestStarId) return null;
+    return this.tapStar(nearestStarId);
+  }
+
+  private findNearestVisibleStar(
+    ndc: THREE.Vector2,
+    camera: THREE.Camera,
+    viewportWidth: number,
+    viewportHeight: number,
+  ): string | null {
+    const snapRadiusSq = TAP_SNAP_RADIUS_PX * TAP_SNAP_RADIUS_PX;
+    let bestStarId: string | null = null;
+    let bestDistSq = snapRadiusSq;
+
+    for (const entry of this.starEntries) {
+      if (!entry.hit.visible) continue;
+
+      this.projectedStar.copy(entry.hit.position).project(camera);
+      if (this.projectedStar.z > 1) continue;
+
+      const pxX = (this.projectedStar.x - ndc.x) * 0.5 * viewportWidth;
+      const pxY = (this.projectedStar.y - ndc.y) * 0.5 * viewportHeight;
+      const distSq = pxX * pxX + pxY * pxY;
+      if (distSq < bestDistSq) {
+        bestDistSq = distSq;
+        bestStarId = entry.star.id;
+      }
+    }
+
+    return bestStarId;
   }
 
   tapStar(starId: string): SkyTapResult | null {
@@ -198,10 +238,9 @@ export class SkyScene {
 
     if (!this.activeConstellationId) {
       this.activeConstellationId = entry.constellationId;
-    }
-
-    if (entry.constellationId !== this.activeConstellationId) {
-      return null;
+    } else if (entry.constellationId !== this.activeConstellationId) {
+      this.clearConstellationProgress(this.activeConstellationId);
+      this.activeConstellationId = entry.constellationId;
     }
 
     const previousTap = this.lastTappedStarId;
@@ -303,7 +342,7 @@ export class SkyScene {
       glow.visible = false;
       glow.renderOrder = 5;
 
-      const hitRadius = Math.max(glowRadius * 5, SKY_SPHERE_RADIUS * 0.012);
+      const hitRadius = Math.max(glowRadius * HIT_RADIUS_MULTIPLIER, HIT_RADIUS_MIN);
       const hit = new THREE.Mesh(new THREE.SphereGeometry(hitRadius, 8, 8), hitMaterial.clone());
       hit.visible = false;
       hit.userData.starId = star.id;
@@ -362,6 +401,31 @@ export class SkyScene {
     this.points.frustumCulled = false;
     this.points.renderOrder = 1;
     this.starsGroup.add(this.points);
+  }
+
+  private clearConstellationProgress(constellationId: string): void {
+    for (const starId of [...this.foundStars]) {
+      const starEntry = this.starById.get(starId);
+      if (starEntry?.constellationId !== constellationId) continue;
+      this.foundStars.delete(starId);
+      starEntry.glow.scale.setScalar(1);
+      const mat = starEntry.glow.material as THREE.MeshBasicMaterial;
+      mat.color.setHex(0xffffff);
+    }
+
+    this.tapOrder.length = 0;
+    this.lastTappedStarId = null;
+
+    for (const line of this.lineEntries) {
+      if (line.constellationId !== constellationId) continue;
+      this.edgeAnimations.delete(line.lineKey);
+      line.progress = 0;
+      line.growFromId = null;
+      line.growToId = null;
+      this.setLineProgress(line.lineKey, 0);
+    }
+
+    this.refreshStarBrightness();
   }
 
   private resolveLineGrowth(
@@ -484,37 +548,28 @@ export class SkyScene {
         date,
       );
 
-      const opacity = horizonOpacity(altitude);
       const idx = entry.index;
-      const pointOpacity = opacity * (0.85 + 0.15 * (1.4 - entry.star.mag) / 1.4);
+      const pointOpacity = 0.85 + 0.15 * (1.4 - entry.star.mag) / 1.4;
       this.pointOpacities[idx] = this.foundStars.has(entry.star.id)
         ? Math.min(1, pointOpacity * 1.4)
         : pointOpacity;
       entry.baseGlowOpacity = pointOpacity;
 
-      if (opacity > 0) {
-        const pos = altAzToWorldPosition(azimuth, altitude, SKY_SPHERE_RADIUS);
-        this.positions[idx * 3] = pos.x;
-        this.positions[idx * 3 + 1] = pos.y;
-        this.positions[idx * 3 + 2] = pos.z;
-        worldPositions.set(entry.star.id, pos);
+      const pos = altAzToWorldPosition(azimuth, altitude, SKY_SPHERE_RADIUS);
+      this.positions[idx * 3] = pos.x;
+      this.positions[idx * 3 + 1] = pos.y;
+      this.positions[idx * 3 + 2] = pos.z;
+      worldPositions.set(entry.star.id, pos);
 
-        entry.glow.position.copy(pos);
-        entry.hit.position.copy(pos);
-        const glowMat = entry.glow.material as THREE.MeshBasicMaterial;
-        glowMat.opacity = this.foundStars.has(entry.star.id)
-          ? Math.min(1, pointOpacity * 1.15)
-          : pointOpacity;
-        entry.glow.visible = true;
-        entry.hit.visible = true;
-        visible++;
-      } else {
-        this.positions[idx * 3] = 0;
-        this.positions[idx * 3 + 1] = -SKY_SPHERE_RADIUS * 2;
-        this.positions[idx * 3 + 2] = 0;
-        entry.glow.visible = false;
-        entry.hit.visible = false;
-      }
+      entry.glow.position.copy(pos);
+      entry.hit.position.copy(pos);
+      const glowMat = entry.glow.material as THREE.MeshBasicMaterial;
+      glowMat.opacity = this.foundStars.has(entry.star.id)
+        ? Math.min(1, pointOpacity * 1.15)
+        : pointOpacity;
+      entry.glow.visible = true;
+      entry.hit.visible = true;
+      visible++;
     }
 
     this.visibleStarCount = visible;

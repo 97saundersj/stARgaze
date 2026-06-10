@@ -13,14 +13,14 @@
         { "id": "saiph", "name": "Saiph", "raHours": 5.795, "decDeg": -9.67, "mag": 2.06 }
       ],
       "lines": [
-        ["betelgeuse", "bellatrix"],
-        ["bellatrix", "mintaka"],
-        ["mintaka", "alnilam"],
-        ["alnilam", "alnitak"],
-        ["alnitak", "rigel"],
-        ["rigel", "saiph"],
-        ["saiph", "betelgeuse"],
-        ["betelgeuse", "rigel"]
+        ["alnitak", "alnilam"],
+        ["alnilam", "mintaka"],
+        ["betelgeuse", "alnitak"],
+        ["alnitak", "saiph"],
+        ["saiph", "rigel"],
+        ["rigel", "mintaka"],
+        ["mintaka", "bellatrix"],
+        ["bellatrix", "betelgeuse"]
       ]
     },
     {
@@ -39,10 +39,10 @@
         ["dubhe", "merak"],
         ["merak", "phecda"],
         ["phecda", "megrez"],
+        ["megrez", "dubhe"],
         ["megrez", "alioth"],
         ["alioth", "mizar"],
-        ["mizar", "alkaid"],
-        ["megrez", "dubhe"]
+        ["mizar", "alkaid"]
       ]
     },
     {
@@ -73,11 +73,12 @@
         { "id": "denebola", "name": "Denebola", "raHours": 11.818, "decDeg": 14.572, "mag": 2.14 }
       ],
       "lines": [
+        ["denebola", "chertan"],
+        ["chertan", "regulus"],
         ["regulus", "algieba"],
         ["algieba", "zosma"],
         ["zosma", "denebola"],
-        ["denebola", "chertan"],
-        ["chertan", "regulus"]
+        ["zosma", "chertan"]
       ]
     },
     {
@@ -93,9 +94,8 @@
       "lines": [
         ["deneb", "sadr"],
         ["sadr", "albireo"],
-        ["sadr", "gienah"],
-        ["deneb", "delta_cyg"],
-        ["delta_cyg", "albireo"]
+        ["sadr", "delta_cyg"],
+        ["sadr", "gienah"]
       ]
     }
   ]

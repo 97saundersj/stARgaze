@@ -47,7 +47,8 @@ const placement = new ARPlacement(renderer, constellationScene.group);
 let appMode: AppMode = 'preview';
 let previewPlaced = false;
 let skyBackgroundActive = false;
-let arNorthCaptured = false;
+let arNorthCaptureStartedAt = 0;
+const AR_NORTH_CAPTURE_TIMEOUT_MS = 5000;
 let skyButton: HTMLButtonElement | null = null;
 
 const phaseController = createPhaseController(constellationScene, {
@@ -124,10 +125,13 @@ let lastTime = performance.now();
 function updateSkyBanner(): void {
   if (!skyBackgroundActive) return;
   const count = skyMode.skyScene.getVisibleStarCount();
-  const base =
+  let base =
     appMode === 'ar'
       ? 'AR with sky map — look around to find constellations'
       : 'Sky map — drag or point your phone at the sky';
+  if (appMode === 'ar' && renderer.xr.isPresenting && !skyMode.hasArNorthAlignment()) {
+    base = 'AR sky map — calibrating compass… face north if stars look misaligned';
+  }
   previewBanner.textContent = skyMode.errorMessage ?? `${base} (${count} stars visible)`;
 }
 
@@ -148,11 +152,10 @@ function disableSkyBackground(): void {
   if (!skyBackgroundActive) return;
 
   skyMode.stop();
-  scene.remove(skyMode.skyScene.group);
+  skyMode.detachSkyToScene(scene);
   skyMode.loversOverlay.unmountConstellation(constellationScene.group, scene);
   skyMode.loversOverlay.detachFromCamera(camera);
-  skyMode.skyScene.group.rotation.set(0, 0, 0);
-  arNorthCaptured = false;
+  arNorthCaptureStartedAt = 0;
   skyBackgroundActive = false;
   camera.far = PREVIEW_FAR;
   camera.updateProjectionMatrix();
@@ -210,7 +213,7 @@ async function enterARMode(): Promise<void> {
 
   await enableSkyBackground();
   skyMode.setLookActive(false);
-  arNorthCaptured = false;
+  arNorthCaptureStartedAt = 0;
   renderer.setClearColor(0x0a0d1a, 0);
   constellationScene.setPreviewBackground(scene, false);
   placement.reset();
@@ -244,9 +247,13 @@ function animate(): void {
       if (skyBackgroundActive) {
         skyMode.update(time, dt);
         const headCamera = renderer.xr.getCamera();
-        if (!arNorthCaptured) {
-          skyMode.captureArNorthOffset(headCamera);
-          arNorthCaptured = true;
+        if (!skyMode.hasArNorthAlignment()) {
+          if (arNorthCaptureStartedAt === 0) {
+            arNorthCaptureStartedAt = time;
+          }
+          if (time - arNorthCaptureStartedAt < AR_NORTH_CAPTURE_TIMEOUT_MS) {
+            skyMode.captureArNorthOffset(headCamera);
+          }
         }
         skyMode.followSkyToCamera(headCamera, true);
         if (time % 2000 < 20) updateSkyBanner();
@@ -254,7 +261,7 @@ function animate(): void {
     } else if (appMode === 'sky' && skyBackgroundActive) {
       skyMode.update(time, dt);
       skyMode.applyCameraOrientation(camera);
-      skyMode.followSkyToCamera(camera, false);
+      skyMode.followSkyToCamera(camera, false, scene);
       if (time % 2000 < 20) updateSkyBanner();
     } else if (appMode === 'preview') {
       if (!previewPlaced) {
@@ -277,15 +284,20 @@ function onResize(): void {
 
 window.addEventListener('resize', onResize);
 
-function createSkyButton(): HTMLButtonElement {
+function updateModeButtonLabel(): void {
+  if (!skyButton) return;
+  skyButton.textContent = appMode === 'sky' ? 'The Lovers' : 'Sky Map';
+}
+
+function createModeButton(): HTMLButtonElement {
   const button = document.createElement('button');
-  button.textContent = 'Sky Map';
+  button.textContent = 'The Lovers';
   button.className = 'mode-button';
 
   button.addEventListener('click', async () => {
     if (appMode === 'sky') {
       exitSkyMode();
-      button.textContent = 'Sky Map';
+      updateModeButtonLabel();
       return;
     }
 
@@ -295,7 +307,7 @@ function createSkyButton(): HTMLButtonElement {
     }
 
     await enterSkyMode();
-    button.textContent = 'Exit Sky Map';
+    updateModeButtonLabel();
   });
 
   return button;
@@ -304,9 +316,7 @@ function createSkyButton(): HTMLButtonElement {
 async function init(): Promise<void> {
   await isARSupported();
 
-  setPreviewMode();
-
-  skyButton = createSkyButton();
+  skyButton = createModeButton();
   arButtonContainer.appendChild(skyButton);
 
   createARButton(
@@ -314,16 +324,17 @@ async function init(): Promise<void> {
     arButtonContainer,
     overlayEl,
     async () => {
-      if (appMode === 'sky') {
-        if (skyButton) skyButton.textContent = 'Sky Map';
-      }
       await enterARMode();
+      updateModeButtonLabel();
     },
     () => {
       exitARMode();
-      if (skyButton) skyButton.textContent = 'Sky Map';
+      updateModeButtonLabel();
     },
   );
+
+  await enterSkyMode();
+  updateModeButtonLabel();
 
   animate();
 }

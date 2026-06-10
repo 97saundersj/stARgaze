@@ -19,8 +19,14 @@ export interface SkyModeController {
   stop: () => void;
   update: (timeMs: number, dt: number) => void;
   applyCameraOrientation: (camera: THREE.PerspectiveCamera) => void;
-  followSkyToCamera: (camera: THREE.Camera, alignNorthForXr: boolean) => void;
-  captureArNorthOffset: (camera: THREE.Camera) => void;
+  followSkyToCamera: (
+    camera: THREE.Camera,
+    alignNorthForXr: boolean,
+    worldParent?: THREE.Object3D,
+  ) => void;
+  detachSkyToScene: (sceneRoot: THREE.Object3D) => void;
+  captureArNorthOffset: (camera: THREE.Camera) => boolean;
+  hasArNorthAlignment: () => boolean;
   setLookActive: (active: boolean) => void;
   setCameraProvider: (provider: () => THREE.Camera) => void;
   setStarTapHandler: (handler: (result: SkyTapResult) => void) => void;
@@ -28,7 +34,18 @@ export interface SkyModeController {
 }
 
 const DRAG_SENSITIVITY = 0.004;
-const TAP_THRESHOLD_PX = 12;
+const TAP_THRESHOLD_PX = 18;
+const AR_NORTH_SAMPLE_COUNT = 8;
+
+function circularMeanRadians(angles: number[]): number {
+  let sinSum = 0;
+  let cosSum = 0;
+  for (const angle of angles) {
+    sinSum += Math.sin(angle);
+    cosSum += Math.cos(angle);
+  }
+  return Math.atan2(sinSum, cosSum);
+}
 
 export function createSkyModeController(): SkyModeController {
   const skyScene = new SkyScene();
@@ -52,6 +69,8 @@ export function createSkyModeController(): SkyModeController {
   let downPointerX = 0;
   let downPointerY = 0;
   let arNorthOffsetY = 0;
+  let arNorthAligned = false;
+  const arNorthSamples: number[] = [];
 
   const attachLookControls = (element: HTMLElement): void => {
     element.addEventListener('pointerdown', onPointerDown);
@@ -74,7 +93,7 @@ export function createSkyModeController(): SkyModeController {
       ((clientX - rect.left) / rect.width) * 2 - 1,
       -((clientY - rect.top) / rect.height) * 2 + 1,
     );
-    return skyScene.tapFromNdc(ndc, getCamera());
+    return skyScene.tapFromNdc(ndc, getCamera(), rect.width, rect.height);
   };
 
   const onPointerDown = (event: PointerEvent): void => {
@@ -176,6 +195,8 @@ export function createSkyModeController(): SkyModeController {
       dragYaw = 0;
       dragPitch = -0.35;
       arNorthOffsetY = 0;
+      arNorthAligned = false;
+      arNorthSamples.length = 0;
     },
     update(timeMs: number, dt: number) {
       if (state !== 'active') return;
@@ -188,7 +209,7 @@ export function createSkyModeController(): SkyModeController {
       dragQuaternion.setFromEuler(dragEuler);
 
       if (deviceOrientation.isActive && deviceOrientation.hasOrientationData) {
-        camera.quaternion.copy(deviceOrientation.orientationQuaternion).multiply(dragQuaternion);
+        camera.quaternion.copy(deviceOrientation.displayQuaternion).multiply(dragQuaternion);
         return;
       }
 
@@ -196,11 +217,44 @@ export function createSkyModeController(): SkyModeController {
     },
     captureArNorthOffset(camera: THREE.Camera) {
       deviceOrientation.update();
-      arNorthOffsetY = deviceOrientation.getSkyNorthOffsetRadians(getViewerYawRadians(camera));
+      const offset = deviceOrientation.getSkyNorthOffsetRadians(getViewerYawRadians(camera));
+      if (offset === null) return false;
+
+      arNorthSamples.push(offset);
+      if (arNorthSamples.length < AR_NORTH_SAMPLE_COUNT) return false;
+
+      arNorthOffsetY = circularMeanRadians(arNorthSamples);
+      arNorthAligned = true;
+      arNorthSamples.length = 0;
+      return true;
     },
-    followSkyToCamera(camera: THREE.Camera, alignNorthForXr: boolean) {
-      camera.getWorldPosition(skyScene.group.position);
-      skyScene.group.rotation.set(0, alignNorthForXr ? arNorthOffsetY : 0, 0);
+    hasArNorthAlignment() {
+      return arNorthAligned;
+    },
+    followSkyToCamera(camera: THREE.Camera, alignNorthForXr: boolean, worldParent?: THREE.Object3D) {
+      if (alignNorthForXr) {
+        if (skyScene.group.parent !== camera) {
+          skyScene.group.parent?.remove(skyScene.group);
+          camera.add(skyScene.group);
+        }
+        skyScene.group.position.set(0, 0, 0);
+        skyScene.group.rotation.set(0, arNorthOffsetY, 0);
+        return;
+      }
+
+      if (worldParent && skyScene.group.parent !== worldParent) {
+        skyScene.group.parent?.remove(skyScene.group);
+        worldParent.add(skyScene.group);
+      }
+      skyScene.group.position.set(0, 0, 0);
+      skyScene.group.rotation.set(0, 0, 0);
+    },
+    detachSkyToScene(sceneRoot: THREE.Object3D) {
+      if (skyScene.group.parent === sceneRoot) return;
+      skyScene.group.parent?.remove(skyScene.group);
+      sceneRoot.add(skyScene.group);
+      skyScene.group.position.set(0, 0, 0);
+      skyScene.group.rotation.set(0, 0, 0);
     },
     setLookActive(active: boolean) {
       lookActive = active;
