@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc && vite build",
+    "sync-stars": "node scripts/sync-missing-stars.mjs",
+    "verify-hip": "node scripts/verify-hip.mjs",
     "preview": "vite preview --host"
   },
   "dependencies": {

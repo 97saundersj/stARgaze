@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import starCatalog from '../data/starCatalog.json';
+import { deriveConstellationLines } from './catalogLines';
 import {
   altAzToWorldPosition,
   createObserver,
@@ -23,6 +24,7 @@ const TAP_SNAP_RADIUS_PX = 56;
 export interface CatalogStar {
   id: string;
   name: string;
+  hip: number;
   raHours: number;
   decDeg: number;
   mag: number;
@@ -30,9 +32,9 @@ export interface CatalogStar {
 
 export interface CatalogConstellation {
   id: string;
+  iau: string;
   name: string;
   stars: CatalogStar[];
-  lines: string[][];
 }
 
 export interface SkyTapResult {
@@ -294,7 +296,8 @@ export class SkyScene {
         });
       }
 
-      for (const [fromId, toId] of constellation.lines) {
+      const lines = deriveConstellationLines(constellation.iau, constellation.stars);
+      for (const [fromId, toId] of lines) {
         const key = lineKey(fromId, toId);
         const { mesh, glow } = createSkyLineMeshes();
         const entry: LineEntry = {

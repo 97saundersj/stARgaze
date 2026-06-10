@@ -2,100 +2,1247 @@
   "constellations": [
     {
       "id": "ori",
+      "iau": "Ori",
       "name": "Orion",
       "stars": [
-        { "id": "betelgeuse", "name": "Betelgeuse", "raHours": 5.919, "decDeg": 7.407, "mag": 0.45 },
-        { "id": "rigel", "name": "Rigel", "raHours": 5.242, "decDeg": -8.202, "mag": 0.13 },
-        { "id": "bellatrix", "name": "Bellatrix", "raHours": 5.419, "decDeg": 6.35, "mag": 1.64 },
-        { "id": "mintaka", "name": "Mintaka", "raHours": 5.533, "decDeg": -0.3, "mag": 2.23 },
-        { "id": "alnilam", "name": "Alnilam", "raHours": 5.603, "decDeg": -1.202, "mag": 1.69 },
-        { "id": "alnitak", "name": "Alnitak", "raHours": 5.679, "decDeg": -1.943, "mag": 1.77 },
-        { "id": "saiph", "name": "Saiph", "raHours": 5.795, "decDeg": -9.67, "mag": 2.06 }
-      ],
-      "lines": [
-        ["alnitak", "alnilam"],
-        ["alnilam", "mintaka"],
-        ["betelgeuse", "alnitak"],
-        ["alnitak", "saiph"],
-        ["saiph", "rigel"],
-        ["rigel", "mintaka"],
-        ["mintaka", "bellatrix"],
-        ["bellatrix", "betelgeuse"]
+        {
+          "id": "pi3_ori",
+          "name": "Pi3 Ori",
+          "hip": 22449,
+          "raHours": 4.831,
+          "decDeg": 6.961,
+          "mag": 3.19
+        },
+        {
+          "id": "pi2_ori",
+          "name": "Pi2 Ori",
+          "hip": 22509,
+          "raHours": 4.844,
+          "decDeg": 8.9,
+          "mag": 4.35
+        },
+        {
+          "id": "pi4_ori",
+          "name": "Pi4 Ori",
+          "hip": 22549,
+          "raHours": 4.853,
+          "decDeg": 5.605,
+          "mag": 3.68
+        },
+        {
+          "id": "five_ori",
+          "name": "5 Ori",
+          "hip": 22730,
+          "raHours": 4.89,
+          "decDeg": 2.508,
+          "mag": 5.33
+        },
+        {
+          "id": "pi1_ori",
+          "name": "Pi1 Ori",
+          "hip": 22845,
+          "raHours": 4.915,
+          "decDeg": 10.151,
+          "mag": 4.64
+        },
+        {
+          "id": "pi6_ori",
+          "name": "Pi6 Ori",
+          "hip": 23123,
+          "raHours": 4.976,
+          "decDeg": 1.714,
+          "mag": 4.47
+        },
+        {
+          "id": "rigel",
+          "name": "Rigel",
+          "hip": 24436,
+          "raHours": 5.242,
+          "decDeg": -8.202,
+          "mag": 0.13
+        },
+        {
+          "id": "bellatrix",
+          "name": "Bellatrix",
+          "hip": 25336,
+          "raHours": 5.419,
+          "decDeg": 6.35,
+          "mag": 1.64
+        },
+        {
+          "id": "mintaka",
+          "name": "Mintaka",
+          "hip": 25930,
+          "raHours": 5.533,
+          "decDeg": -0.3,
+          "mag": 2.23
+        },
+        {
+          "id": "alnilam",
+          "name": "Alnilam",
+          "hip": 26311,
+          "raHours": 5.603,
+          "decDeg": -1.202,
+          "mag": 1.69
+        },
+        {
+          "id": "alnitak",
+          "name": "Alnitak",
+          "hip": 26727,
+          "raHours": 5.679,
+          "decDeg": -1.943,
+          "mag": 1.77
+        },
+        {
+          "id": "saiph",
+          "name": "Saiph",
+          "hip": 27366,
+          "raHours": 5.795,
+          "decDeg": -9.67,
+          "mag": 2.06
+        },
+        {
+          "id": "meissa",
+          "name": "Meissa",
+          "hip": 26207,
+          "raHours": 5.586,
+          "decDeg": 9.934,
+          "mag": 3.39
+        },
+        {
+          "id": "betelgeuse",
+          "name": "Betelgeuse",
+          "hip": 27989,
+          "raHours": 5.919,
+          "decDeg": 7.407,
+          "mag": 0.45
+        },
+        {
+          "id": "chi1_ori",
+          "name": "Chi1 Ori",
+          "hip": 27913,
+          "raHours": 5.906,
+          "decDeg": 20.276,
+          "mag": 4.39
+        },
+        {
+          "id": "mu_ori",
+          "name": "Mu Ori",
+          "hip": 28614,
+          "raHours": 6.04,
+          "decDeg": 9.647,
+          "mag": 4.12
+        },
+        {
+          "id": "sixty_four_ori",
+          "name": "64 Ori",
+          "hip": 28691,
+          "raHours": 6.058,
+          "decDeg": 19.691,
+          "mag": 5.14
+        },
+        {
+          "id": "nu_ori",
+          "name": "Nu Ori",
+          "hip": 29038,
+          "raHours": 6.126,
+          "decDeg": 14.769,
+          "mag": 4.42
+        },
+        {
+          "id": "xi_ori",
+          "name": "Xi Ori",
+          "hip": 29426,
+          "raHours": 6.199,
+          "decDeg": 14.209,
+          "mag": 4.45
+        }
       ]
     },
     {
       "id": "uma",
+      "iau": "UMa",
       "name": "Ursa Major",
       "stars": [
-        { "id": "dubhe", "name": "Dubhe", "raHours": 11.062, "decDeg": 61.751, "mag": 1.79 },
-        { "id": "merak", "name": "Merak", "raHours": 11.031, "decDeg": 56.383, "mag": 2.37 },
-        { "id": "phecda", "name": "Phecda", "raHours": 11.897, "decDeg": 53.695, "mag": 2.44 },
-        { "id": "megrez", "name": "Megrez", "raHours": 12.257, "decDeg": 57.033, "mag": 3.32 },
-        { "id": "alioth", "name": "Alioth", "raHours": 12.9, "decDeg": 55.96, "mag": 1.77 },
-        { "id": "mizar", "name": "Mizar", "raHours": 13.399, "decDeg": 54.925, "mag": 2.27 },
-        { "id": "alkaid", "name": "Alkaid", "raHours": 13.792, "decDeg": 49.313, "mag": 1.86 }
-      ],
-      "lines": [
-        ["dubhe", "merak"],
-        ["merak", "phecda"],
-        ["phecda", "megrez"],
-        ["megrez", "dubhe"],
-        ["megrez", "alioth"],
-        ["alioth", "mizar"],
-        ["mizar", "alkaid"]
+        {
+          "id": "lambda_uma",
+          "name": "Lambda UMa",
+          "hip": 41704,
+          "raHours": 8.504,
+          "decDeg": 60.718,
+          "mag": 3.35
+        },
+        {
+          "id": "talitha",
+          "name": "Talitha",
+          "hip": 44127,
+          "raHours": 8.987,
+          "decDeg": 48.042,
+          "mag": 3.14
+        },
+        {
+          "id": "muscida",
+          "name": "Muscida",
+          "hip": 44471,
+          "raHours": 9.06,
+          "decDeg": 47.157,
+          "mag": 3.57
+        },
+        {
+          "id": "theta_uma",
+          "name": "Theta UMa",
+          "hip": 46733,
+          "raHours": 9.525,
+          "decDeg": 63.062,
+          "mag": 3.65
+        },
+        {
+          "id": "nu_uma",
+          "name": "Nu UMa",
+          "hip": 46853,
+          "raHours": 9.548,
+          "decDeg": 51.679,
+          "mag": 3.17
+        },
+        {
+          "id": "mu_uma",
+          "name": "Mu UMa",
+          "hip": 48319,
+          "raHours": 9.85,
+          "decDeg": 59.039,
+          "mag": 3.78
+        },
+        {
+          "id": "chi_uma",
+          "name": "Chi UMa",
+          "hip": 48402,
+          "raHours": 9.868,
+          "decDeg": 54.064,
+          "mag": 4.55
+        },
+        {
+          "id": "thirty_three_uma",
+          "name": "33 UMa",
+          "hip": 50372,
+          "raHours": 10.285,
+          "decDeg": 42.914,
+          "mag": 3.45
+        },
+        {
+          "id": "thirty_four_uma",
+          "name": "34 UMa",
+          "hip": 50801,
+          "raHours": 10.372,
+          "decDeg": 41.499,
+          "mag": 3.06
+        },
+        {
+          "id": "merak",
+          "name": "Merak",
+          "hip": 53910,
+          "raHours": 11.031,
+          "decDeg": 56.383,
+          "mag": 2.37
+        },
+        {
+          "id": "dubhe",
+          "name": "Dubhe",
+          "hip": 54061,
+          "raHours": 11.062,
+          "decDeg": 61.751,
+          "mag": 1.79
+        },
+        {
+          "id": "psi_uma",
+          "name": "Psi UMa",
+          "hip": 54539,
+          "raHours": 11.161,
+          "decDeg": 44.499,
+          "mag": 3
+        },
+        {
+          "id": "phecda",
+          "name": "Phecda",
+          "hip": 58001,
+          "raHours": 11.897,
+          "decDeg": 53.695,
+          "mag": 2.41
+        },
+        {
+          "id": "chi2_uma",
+          "name": "Chi2 UMa",
+          "hip": 57399,
+          "raHours": 11.768,
+          "decDeg": 47.779,
+          "mag": 3.69
+        },
+        {
+          "id": "megrez",
+          "name": "Megrez",
+          "hip": 59774,
+          "raHours": 12.257,
+          "decDeg": 57.033,
+          "mag": 3.32
+        },
+        {
+          "id": "alioth",
+          "name": "Alioth",
+          "hip": 62956,
+          "raHours": 12.9,
+          "decDeg": 55.96,
+          "mag": 1.77
+        },
+        {
+          "id": "mizar",
+          "name": "Mizar",
+          "hip": 65378,
+          "raHours": 13.399,
+          "decDeg": 54.925,
+          "mag": 2.27
+        },
+        {
+          "id": "alkaid",
+          "name": "Alkaid",
+          "hip": 67301,
+          "raHours": 13.792,
+          "decDeg": 49.313,
+          "mag": 1.86
+        }
       ]
     },
     {
       "id": "cas",
+      "iau": "Cas",
       "name": "Cassiopeia",
       "stars": [
-        { "id": "caph", "name": "Caph", "raHours": 0.153, "decDeg": 59.15, "mag": 2.28 },
-        { "id": "schedar", "name": "Schedar", "raHours": 0.675, "decDeg": 56.537, "mag": 2.24 },
-        { "id": "gamma_cas", "name": "Gamma Cas", "raHours": 0.945, "decDeg": 60.717, "mag": 2.47 },
-        { "id": "ruchbah", "name": "Ruchbah", "raHours": 1.433, "decDeg": 60.235, "mag": 2.66 },
-        { "id": "segin", "name": "Segin", "raHours": 1.906, "decDeg": 63.67, "mag": 3.35 }
-      ],
-      "lines": [
-        ["caph", "schedar"],
-        ["schedar", "gamma_cas"],
-        ["gamma_cas", "ruchbah"],
-        ["ruchbah", "segin"]
+        {
+          "id": "caph",
+          "name": "Caph",
+          "hip": 746,
+          "raHours": 0.153,
+          "decDeg": 59.15,
+          "mag": 2.28
+        },
+        {
+          "id": "schedar",
+          "name": "Schedar",
+          "hip": 3179,
+          "raHours": 0.675,
+          "decDeg": 56.537,
+          "mag": 2.24
+        },
+        {
+          "id": "gamma_cas",
+          "name": "Gamma Cas",
+          "hip": 4427,
+          "raHours": 0.945,
+          "decDeg": 60.717,
+          "mag": 2.47
+        },
+        {
+          "id": "rho_cas",
+          "name": "Rho Cas",
+          "hip": 6686,
+          "raHours": 1.43,
+          "decDeg": 60.235,
+          "mag": 2.66
+        },
+        {
+          "id": "segin",
+          "name": "Segin",
+          "hip": 8886,
+          "raHours": 1.906,
+          "decDeg": 63.67,
+          "mag": 3.35
+        }
       ]
     },
     {
       "id": "leo",
+      "iau": "Leo",
       "name": "Leo",
       "stars": [
-        { "id": "regulus", "name": "Regulus", "raHours": 10.139, "decDeg": 11.967, "mag": 1.35 },
-        { "id": "algieba", "name": "Algieba", "raHours": 10.333, "decDeg": 19.841, "mag": 2.28 },
-        { "id": "zosma", "name": "Zosma", "raHours": 11.237, "decDeg": 20.524, "mag": 2.56 },
-        { "id": "chertan", "name": "Chertan", "raHours": 11.248, "decDeg": 15.429, "mag": 3.33 },
-        { "id": "denebola", "name": "Denebola", "raHours": 11.818, "decDeg": 14.572, "mag": 2.14 }
-      ],
-      "lines": [
-        ["denebola", "chertan"],
-        ["chertan", "regulus"],
-        ["regulus", "algieba"],
-        ["algieba", "zosma"],
-        ["zosma", "denebola"],
-        ["zosma", "chertan"]
+        {
+          "id": "regulus",
+          "name": "Regulus",
+          "hip": 49669,
+          "raHours": 10.139,
+          "decDeg": 11.967,
+          "mag": 1.35
+        },
+        {
+          "id": "eta_leo",
+          "name": "Eta Leo",
+          "hip": 49583,
+          "raHours": 10.122,
+          "decDeg": 16.763,
+          "mag": 3.48
+        },
+        {
+          "id": "algieba",
+          "name": "Algieba",
+          "hip": 50583,
+          "raHours": 10.333,
+          "decDeg": 19.841,
+          "mag": 2.28
+        },
+        {
+          "id": "zeta_leo",
+          "name": "Zeta Leo",
+          "hip": 50335,
+          "raHours": 10.278,
+          "decDeg": 23.417,
+          "mag": 3.43
+        },
+        {
+          "id": "epsilon_leo",
+          "name": "Epsilon Leo",
+          "hip": 47908,
+          "raHours": 9.764,
+          "decDeg": 23.774,
+          "mag": 2.97
+        },
+        {
+          "id": "mu_leo",
+          "name": "Mu Leo",
+          "hip": 48455,
+          "raHours": 9.879,
+          "decDeg": 26.007,
+          "mag": 3.88
+        },
+        {
+          "id": "zosma",
+          "name": "Zosma",
+          "hip": 54879,
+          "raHours": 11.237,
+          "decDeg": 15.43,
+          "mag": 3.33
+        },
+        {
+          "id": "chertan",
+          "name": "Chertan",
+          "hip": 54872,
+          "raHours": 11.235,
+          "decDeg": 20.524,
+          "mag": 2.56
+        },
+        {
+          "id": "denebola",
+          "name": "Denebola",
+          "hip": 57632,
+          "raHours": 11.818,
+          "decDeg": 14.572,
+          "mag": 2.14
+        }
       ]
     },
     {
       "id": "cyg",
+      "iau": "Cyg",
       "name": "Cygnus",
       "stars": [
-        { "id": "deneb", "name": "Deneb", "raHours": 20.691, "decDeg": 45.28, "mag": 1.25 },
-        { "id": "sadr", "name": "Sadr", "raHours": 20.37, "decDeg": 40.257, "mag": 2.23 },
-        { "id": "gienah", "name": "Gienah", "raHours": 20.77, "decDeg": 33.97, "mag": 2.48 },
-        { "id": "delta_cyg", "name": "Delta Cyg", "raHours": 19.749, "decDeg": 45.131, "mag": 2.87 },
-        { "id": "albireo", "name": "Albireo", "raHours": 19.512, "decDeg": 27.96, "mag": 3.05 }
-      ],
-      "lines": [
-        ["deneb", "sadr"],
-        ["sadr", "albireo"],
-        ["sadr", "delta_cyg"],
-        ["sadr", "gienah"]
+        {
+          "id": "sixty_three_cyg",
+          "name": "63 Cyg",
+          "hip": 94779,
+          "raHours": 19.285,
+          "decDeg": 53.368,
+          "mag": 3.8
+        },
+        {
+          "id": "delta_cyg",
+          "name": "Delta Cyg",
+          "hip": 95853,
+          "raHours": 19.495,
+          "decDeg": 51.729,
+          "mag": 3.76
+        },
+        {
+          "id": "albireo",
+          "name": "Albireo",
+          "hip": 95947,
+          "raHours": 19.512,
+          "decDeg": 27.96,
+          "mag": 3.05
+        },
+        {
+          "id": "thirty_cyg",
+          "name": "30 Cyg",
+          "hip": 97165,
+          "raHours": 19.75,
+          "decDeg": 45.131,
+          "mag": 2.86
+        },
+        {
+          "id": "zeta_cyg",
+          "name": "Zeta Cyg",
+          "hip": 98110,
+          "raHours": 19.938,
+          "decDeg": 35.084,
+          "mag": 3.89
+        },
+        {
+          "id": "sadr",
+          "name": "Sadr",
+          "hip": 100453,
+          "raHours": 20.37,
+          "decDeg": 40.257,
+          "mag": 2.23
+        },
+        {
+          "id": "deneb",
+          "name": "Deneb",
+          "hip": 102098,
+          "raHours": 20.691,
+          "decDeg": 45.28,
+          "mag": 1.25
+        },
+        {
+          "id": "gienah",
+          "name": "Gienah",
+          "hip": 102488,
+          "raHours": 20.77,
+          "decDeg": 33.97,
+          "mag": 2.48
+        },
+        {
+          "id": "sixty_four_cyg",
+          "name": "64 Cyg",
+          "hip": 104732,
+          "raHours": 21.216,
+          "decDeg": 30.227,
+          "mag": 3.21
+        },
+        {
+          "id": "mu1_cyg",
+          "name": "Mu1 Cyg",
+          "hip": 107310,
+          "raHours": 21.736,
+          "decDeg": 28.743,
+          "mag": 4.49
+        }
+      ]
+    },
+    {
+      "id": "gem",
+      "iau": "Gem",
+      "name": "Gemini",
+      "stars": [
+        {
+          "id": "one_gem",
+          "name": "1 Gem",
+          "hip": 28734,
+          "raHours": 6.069,
+          "decDeg": 23.264,
+          "mag": 4.16
+        },
+        {
+          "id": "eta_gem",
+          "name": "Eta Gem",
+          "hip": 29655,
+          "raHours": 6.248,
+          "decDeg": 22.507,
+          "mag": 3.31
+        },
+        {
+          "id": "mu_gem",
+          "name": "Mu Gem",
+          "hip": 30343,
+          "raHours": 6.383,
+          "decDeg": 22.514,
+          "mag": 2.87
+        },
+        {
+          "id": "nu_gem",
+          "name": "Nu Gem",
+          "hip": 30883,
+          "raHours": 6.483,
+          "decDeg": 20.212,
+          "mag": 4.13
+        },
+        {
+          "id": "gamma_gem",
+          "name": "Gamma Gem",
+          "hip": 31681,
+          "raHours": 6.629,
+          "decDeg": 16.399,
+          "mag": 1.93
+        },
+        {
+          "id": "epsilon_gem",
+          "name": "Epsilon Gem",
+          "hip": 32246,
+          "raHours": 6.732,
+          "decDeg": 25.131,
+          "mag": 3.06
+        },
+        {
+          "id": "xi_gem",
+          "name": "Xi Gem",
+          "hip": 32362,
+          "raHours": 6.755,
+          "decDeg": 12.896,
+          "mag": 3.35
+        },
+        {
+          "id": "theta_gem",
+          "name": "Theta Gem",
+          "hip": 33018,
+          "raHours": 6.88,
+          "decDeg": 33.961,
+          "mag": 3.6
+        },
+        {
+          "id": "zeta_gem",
+          "name": "Zeta Gem",
+          "hip": 34088,
+          "raHours": 7.068,
+          "decDeg": 20.57,
+          "mag": 4.01
+        },
+        {
+          "id": "tau_gem",
+          "name": "Tau Gem",
+          "hip": 34693,
+          "raHours": 7.186,
+          "decDeg": 30.245,
+          "mag": 4.41
+        },
+        {
+          "id": "lambda_gem",
+          "name": "Lambda Gem",
+          "hip": 35350,
+          "raHours": 7.302,
+          "decDeg": 16.54,
+          "mag": 3.58
+        },
+        {
+          "id": "delta_gem",
+          "name": "Delta Gem",
+          "hip": 35550,
+          "raHours": 7.335,
+          "decDeg": 21.982,
+          "mag": 3.5
+        },
+        {
+          "id": "iota_gem",
+          "name": "Iota Gem",
+          "hip": 36046,
+          "raHours": 7.429,
+          "decDeg": 27.798,
+          "mag": 3.78
+        },
+        {
+          "id": "castor",
+          "name": "Castor",
+          "hip": 36850,
+          "raHours": 7.577,
+          "decDeg": 31.889,
+          "mag": 1.58
+        },
+        {
+          "id": "upsilon_gem",
+          "name": "Upsilon Gem",
+          "hip": 36962,
+          "raHours": 7.599,
+          "decDeg": 26.896,
+          "mag": 4.06
+        },
+        {
+          "id": "kappa_gem",
+          "name": "Kappa Gem",
+          "hip": 37740,
+          "raHours": 7.741,
+          "decDeg": 24.398,
+          "mag": 3.57
+        },
+        {
+          "id": "pollux",
+          "name": "Pollux",
+          "hip": 37826,
+          "raHours": 7.755,
+          "decDeg": 28.026,
+          "mag": 1.16
+        }
+      ]
+    },
+    {
+      "id": "sgr",
+      "iau": "Sgr",
+      "name": "Sagittarius",
+      "stars": [
+        {
+          "id": "kaus_borealis",
+          "name": "Kaus Borealis",
+          "hip": 87072,
+          "raHours": 17.793,
+          "decDeg": -27.831,
+          "mag": 4.53
+        },
+        {
+          "id": "kaus_media",
+          "name": "Kaus Media",
+          "hip": 88635,
+          "raHours": 18.097,
+          "decDeg": -30.424,
+          "mag": 2.98
+        },
+        {
+          "id": "mu_sgr",
+          "name": "Mu Sgr",
+          "hip": 89341,
+          "raHours": 18.229,
+          "decDeg": -21.059,
+          "mag": 3.84
+        },
+        {
+          "id": "kaus_australis",
+          "name": "Kaus Australis",
+          "hip": 89642,
+          "raHours": 18.294,
+          "decDeg": -36.761,
+          "mag": 3.1
+        },
+        {
+          "id": "delta_sgr",
+          "name": "Delta Sgr",
+          "hip": 89931,
+          "raHours": 18.35,
+          "decDeg": -29.828,
+          "mag": 2.72
+        },
+        {
+          "id": "nunki",
+          "name": "Nunki",
+          "hip": 90185,
+          "raHours": 18.403,
+          "decDeg": -34.384,
+          "mag": 1.79
+        },
+        {
+          "id": "lambda_sgr",
+          "name": "Lambda Sgr",
+          "hip": 90496,
+          "raHours": 18.466,
+          "decDeg": -25.421,
+          "mag": 2.82
+        },
+        {
+          "id": "phi_sgr",
+          "name": "Phi Sgr",
+          "hip": 92041,
+          "raHours": 18.761,
+          "decDeg": -26.991,
+          "mag": 3.17
+        },
+        {
+          "id": "ascella",
+          "name": "Ascella",
+          "hip": 92855,
+          "raHours": 18.921,
+          "decDeg": -26.297,
+          "mag": 2.05
+        },
+        {
+          "id": "2_sgr",
+          "name": "ξ2 Sgr",
+          "hip": 93085,
+          "raHours": 18.962,
+          "decDeg": -21.107,
+          "mag": 3.52
+        },
+        {
+          "id": "zeta_sgr",
+          "name": "Zeta Sgr",
+          "hip": 93506,
+          "raHours": 19.044,
+          "decDeg": -29.88,
+          "mag": 2.6
+        },
+        {
+          "id": "omicron_sgr",
+          "name": "Omicron Sgr",
+          "hip": 93683,
+          "raHours": 19.078,
+          "decDeg": -21.741,
+          "mag": 3.76
+        },
+        {
+          "id": "tau_sgr",
+          "name": "Tau Sgr",
+          "hip": 93864,
+          "raHours": 19.116,
+          "decDeg": -27.67,
+          "mag": 3.32
+        },
+        {
+          "id": "43_sgr",
+          "name": "43 Sgr",
+          "hip": 94820,
+          "raHours": 19.294,
+          "decDeg": -18.953,
+          "mag": 4.88
+        },
+        {
+          "id": "1_sgr",
+          "name": "ρ1 Sgr",
+          "hip": 95168,
+          "raHours": 19.361,
+          "decDeg": -17.847,
+          "mag": 3.92
+        },
+        {
+          "id": "alnasl",
+          "name": "Alnasl",
+          "hip": 95294,
+          "raHours": 19.387,
+          "decDeg": -44.8,
+          "mag": 4.27
+        },
+        {
+          "id": "alpha_sgr",
+          "name": "Alpha Sgr",
+          "hip": 95347,
+          "raHours": 19.398,
+          "decDeg": -40.616,
+          "mag": 3.96
+        },
+        {
+          "id": "51_sgr",
+          "name": "51 Sgr",
+          "hip": 96406,
+          "raHours": 19.6,
+          "decDeg": -24.719,
+          "mag": 5.64
+        },
+        {
+          "id": "iota_sgr",
+          "name": "Iota Sgr",
+          "hip": 98032,
+          "raHours": 19.921,
+          "decDeg": -41.868,
+          "mag": 4.12
+        },
+        {
+          "id": "hip_98412",
+          "name": "θ1 Sgr",
+          "hip": 98412,
+          "raHours": 19.996,
+          "decDeg": -35.276,
+          "mag": 4.37
+        },
+        {
+          "id": "62_sgr",
+          "name": "62 Sgr",
+          "hip": 98688,
+          "raHours": 20.044,
+          "decDeg": -27.71,
+          "mag": 4.43
+        }
+      ]
+    },
+    {
+      "id": "psc",
+      "iau": "Psc",
+      "name": "Pisces",
+      "stars": [
+        {
+          "id": "41_psc",
+          "name": "41 Psc",
+          "hip": 1645,
+          "raHours": 0.343,
+          "decDeg": 8.19,
+          "mag": 5.38
+        },
+        {
+          "id": "delta_psc",
+          "name": "Delta Psc",
+          "hip": 3786,
+          "raHours": 0.811,
+          "decDeg": 7.585,
+          "mag": 4.44
+        },
+        {
+          "id": "alpherg",
+          "name": "Alpherg",
+          "hip": 4889,
+          "raHours": 1.047,
+          "decDeg": 31.804,
+          "mag": 5.5
+        },
+        {
+          "id": "epsilon_psc",
+          "name": "Epsilon Psc",
+          "hip": 4906,
+          "raHours": 1.049,
+          "decDeg": 7.89,
+          "mag": 4.27
+        },
+        {
+          "id": "phi_psc",
+          "name": "Phi Psc",
+          "hip": 5742,
+          "raHours": 1.229,
+          "decDeg": 24.584,
+          "mag": 4.67
+        },
+        {
+          "id": "upsilon_psc",
+          "name": "Upsilon Psc",
+          "hip": 6193,
+          "raHours": 1.324,
+          "decDeg": 27.264,
+          "mag": 4.74
+        },
+        {
+          "id": "mu_psc",
+          "name": "Mu Psc",
+          "hip": 7007,
+          "raHours": 1.503,
+          "decDeg": 6.144,
+          "mag": 4.84
+        },
+        {
+          "id": "fum_al_samakah",
+          "name": "Fum al Samakah",
+          "hip": 7097,
+          "raHours": 1.525,
+          "decDeg": 15.346,
+          "mag": 3.62
+        },
+        {
+          "id": "nu_psc",
+          "name": "Nu Psc",
+          "hip": 7884,
+          "raHours": 1.691,
+          "decDeg": 5.488,
+          "mag": 4.45
+        },
+        {
+          "id": "alrescha",
+          "name": "Alrescha",
+          "hip": 8198,
+          "raHours": 1.757,
+          "decDeg": 9.158,
+          "mag": 4.26
+        },
+        {
+          "id": "xi_psc",
+          "name": "Xi Psc",
+          "hip": 8833,
+          "raHours": 1.893,
+          "decDeg": 3.187,
+          "mag": 4.61
+        },
+        {
+          "id": "alpha_psc",
+          "name": "Alpha Psc",
+          "hip": 9487,
+          "raHours": 2.034,
+          "decDeg": 2.764,
+          "mag": 3.82
+        },
+        {
+          "id": "gamma_psc",
+          "name": "Gamma Psc",
+          "hip": 114971,
+          "raHours": 23.286,
+          "decDeg": 3.282,
+          "mag": 3.7
+        },
+        {
+          "id": "kappa_psc",
+          "name": "Kappa Psc",
+          "hip": 115738,
+          "raHours": 23.449,
+          "decDeg": 1.256,
+          "mag": 4.95
+        },
+        {
+          "id": "theta_psc",
+          "name": "Theta Psc",
+          "hip": 115830,
+          "raHours": 23.466,
+          "decDeg": 6.379,
+          "mag": 4.27
+        },
+        {
+          "id": "iota_psc",
+          "name": "Iota Psc",
+          "hip": 116771,
+          "raHours": 23.666,
+          "decDeg": 5.627,
+          "mag": 4.13
+        },
+        {
+          "id": "lambda_psc",
+          "name": "Lambda Psc",
+          "hip": 116928,
+          "raHours": 23.701,
+          "decDeg": 1.78,
+          "mag": 4.49
+        },
+        {
+          "id": "omega_psc",
+          "name": "Omega Psc",
+          "hip": 118268,
+          "raHours": 23.989,
+          "decDeg": 6.864,
+          "mag": 4.03
+        }
+      ]
+    },
+    {
+      "id": "cma",
+      "iau": "CMa",
+      "name": "Canis Major",
+      "stars": [
+        {
+          "id": "zeta_cma",
+          "name": "Zeta CMa",
+          "hip": 30122,
+          "raHours": 6.339,
+          "decDeg": -30.063,
+          "mag": 3.02
+        },
+        {
+          "id": "mirzam",
+          "name": "Mirzam",
+          "hip": 30324,
+          "raHours": 6.378,
+          "decDeg": -17.956,
+          "mag": 1.98
+        },
+        {
+          "id": "2_cma",
+          "name": "ξ2 CMa",
+          "hip": 31416,
+          "raHours": 6.584,
+          "decDeg": -22.965,
+          "mag": 4.54
+        },
+        {
+          "id": "adhara",
+          "name": "Adhara",
+          "hip": 31592,
+          "raHours": 6.611,
+          "decDeg": -19.256,
+          "mag": 3.95
+        },
+        {
+          "id": "sirius",
+          "name": "Sirius",
+          "hip": 32349,
+          "raHours": 6.753,
+          "decDeg": -16.713,
+          "mag": -1.44
+        },
+        {
+          "id": "1_cma",
+          "name": "ο1 CMa",
+          "hip": 33152,
+          "raHours": 6.902,
+          "decDeg": -24.184,
+          "mag": 3.89
+        },
+        {
+          "id": "theta_cma",
+          "name": "Theta CMa",
+          "hip": 33160,
+          "raHours": 6.903,
+          "decDeg": -12.039,
+          "mag": 4.08
+        },
+        {
+          "id": "iota_cma",
+          "name": "Iota CMa",
+          "hip": 33347,
+          "raHours": 6.936,
+          "decDeg": -17.054,
+          "mag": 4.36
+        },
+        {
+          "id": "wezen",
+          "name": "Wezen",
+          "hip": 33579,
+          "raHours": 6.977,
+          "decDeg": -28.972,
+          "mag": 1.5
+        },
+        {
+          "id": "sigma_cma",
+          "name": "Sigma CMa",
+          "hip": 33856,
+          "raHours": 7.029,
+          "decDeg": -27.935,
+          "mag": 3.49
+        },
+        {
+          "id": "delta_cma",
+          "name": "Delta CMa",
+          "hip": 34444,
+          "raHours": 7.14,
+          "decDeg": -26.393,
+          "mag": 1.83
+        }
+      ]
+    },
+    {
+      "id": "lyr",
+      "iau": "Lyr",
+      "name": "Lyra",
+      "stars": [
+        {
+          "id": "vega",
+          "name": "Vega",
+          "hip": 91262,
+          "raHours": 18.616,
+          "decDeg": 38.783,
+          "mag": 0.03
+        },
+        {
+          "id": "1_lyr",
+          "name": "ζ1 Lyr",
+          "hip": 91971,
+          "raHours": 18.746,
+          "decDeg": 37.605,
+          "mag": 4.34
+        },
+        {
+          "id": "beta_lyr",
+          "name": "Beta Lyr",
+          "hip": 92420,
+          "raHours": 18.835,
+          "decDeg": 33.363,
+          "mag": 3.52
+        },
+        {
+          "id": "2_lyr",
+          "name": "δ2 Lyr",
+          "hip": 92791,
+          "raHours": 18.908,
+          "decDeg": 36.899,
+          "mag": 4.22
+        },
+        {
+          "id": "gamma_lyr",
+          "name": "Gamma Lyr",
+          "hip": 93194,
+          "raHours": 18.982,
+          "decDeg": 32.69,
+          "mag": 3.25
+        }
+      ]
+    },
+    {
+      "id": "sco",
+      "iau": "Sco",
+      "name": "Scorpius",
+      "stars": [
+        {
+          "id": "pi_sco",
+          "name": "Pi Sco",
+          "hip": 78265,
+          "raHours": 15.981,
+          "decDeg": -26.114,
+          "mag": 2.89
+        },
+        {
+          "id": "delta_sco",
+          "name": "Delta Sco",
+          "hip": 78401,
+          "raHours": 16.006,
+          "decDeg": -22.622,
+          "mag": 2.29
+        },
+        {
+          "id": "1_sco",
+          "name": "β1 Sco",
+          "hip": 78820,
+          "raHours": 16.091,
+          "decDeg": -19.805,
+          "mag": 2.56
+        },
+        {
+          "id": "antares",
+          "name": "Antares",
+          "hip": 80763,
+          "raHours": 16.49,
+          "decDeg": -26.432,
+          "mag": 1.06
+        },
+        {
+          "id": "tau_sco",
+          "name": "Tau Sco",
+          "hip": 81266,
+          "raHours": 16.598,
+          "decDeg": -28.216,
+          "mag": 2.82
+        },
+        {
+          "id": "epsilon_sco",
+          "name": "Epsilon Sco",
+          "hip": 82396,
+          "raHours": 16.836,
+          "decDeg": -34.293,
+          "mag": 2.29
+        },
+        {
+          "id": "hip_82514",
+          "name": "μ1 Sco",
+          "hip": 82514,
+          "raHours": 16.865,
+          "decDeg": -38.047,
+          "mag": 3
+        },
+        {
+          "id": "hip_82671",
+          "name": "ζ1 Sco",
+          "hip": 82671,
+          "raHours": 16.9,
+          "decDeg": -42.362,
+          "mag": 4.7
+        },
+        {
+          "id": "eta_sco",
+          "name": "Eta Sco",
+          "hip": 84143,
+          "raHours": 17.203,
+          "decDeg": -43.238,
+          "mag": 3.32
+        },
+        {
+          "id": "shaula",
+          "name": "Shaula",
+          "hip": 85927,
+          "raHours": 17.56,
+          "decDeg": -37.104,
+          "mag": 1.62
+        },
+        {
+          "id": "theta_sco",
+          "name": "Theta Sco",
+          "hip": 86228,
+          "raHours": 17.622,
+          "decDeg": -42.998,
+          "mag": 1.86
+        },
+        {
+          "id": "sargas",
+          "name": "Sargas",
+          "hip": 86670,
+          "raHours": 17.708,
+          "decDeg": -39.03,
+          "mag": 2.39
+        },
+        {
+          "id": "hip_87073",
+          "name": "ι1 Sco",
+          "hip": 87073,
+          "raHours": 17.793,
+          "decDeg": -40.127,
+          "mag": 2.99
+        }
       ]
     }
   ]
