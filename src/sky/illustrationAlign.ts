@@ -7,10 +7,17 @@ export interface IllustrationAnchor {
 /** Grid segments per axis; Stellarium uses 4 (5 sample lines). */
 export const ILLUSTRATION_TESSELLATION_DIVISIONS = 16;
 
+/** Stellarium StelUtils::spheToRect — J2000 equatorial unit vector. */
+export function spheToRect(raHours: number, decDeg: number, target: THREE.Vector3): void {
+  const lng = (raHours * 15 * Math.PI) / 180;
+  const lat = (decDeg * Math.PI) / 180;
+  const cosLat = Math.cos(lat);
+  target.set(Math.cos(lng) * cosLat, Math.sin(lng) * cosLat, Math.sin(lat));
+}
+
 /**
  * Stellarium constellation-artwork placement (ConstellationMgr.cpp).
- * Three texture anchors map to three star directions via X = B * inv(A), then each
- * pixel is projected onto the unit sphere and normalized.
+ * Three texture anchors map to three star directions via X = B * inv(A).
  */
 export function buildStellariumImageTransform(
   starDirs: [THREE.Vector3, THREE.Vector3, THREE.Vector3],
@@ -62,6 +69,43 @@ export function projectStellariumTexCoord(
   target.set(px, py, 0).applyMatrix4(transform).normalize();
 }
 
+/** Stellarium py: 0 = image bottom; matches Three.js UV v when texture.flipY is true. */
+export function stellariumPixelCoords(
+  u: number,
+  v: number,
+  texSizeX: number,
+  texSizeY: number,
+): { px: number; py: number } {
+  return { px: u * texSizeX, py: v * texSizeY };
+}
+
+/**
+ * Maps the three J2000 anchor directions to the current horizontal frame.
+ * Stellarium bakes art in equatorial space; the view rotation carries it to the sky.
+ */
+export function computeEquatorialToHorizontalRotation(
+  eq: [THREE.Vector3, THREE.Vector3, THREE.Vector3],
+  hor: [THREE.Vector3, THREE.Vector3, THREE.Vector3],
+  rotationOut: THREE.Matrix4,
+): boolean {
+  const mEq = new THREE.Matrix4().set(
+    eq[0].x, eq[1].x, eq[2].x, 0,
+    eq[0].y, eq[1].y, eq[2].y, 0,
+    eq[0].z, eq[1].z, eq[2].z, 0,
+    0, 0, 0, 1,
+  );
+  const mHor = new THREE.Matrix4().set(
+    hor[0].x, hor[1].x, hor[2].x, 0,
+    hor[0].y, hor[1].y, hor[2].y, 0,
+    hor[0].z, hor[1].z, hor[2].z, 0,
+    0, 0, 0, 1,
+  );
+  const mEqInv = mEq.clone().invert();
+  if (!Number.isFinite(mEqInv.elements[0])) return false;
+  rotationOut.copy(mHor).multiply(mEqInv);
+  return true;
+}
+
 function pushTri(
   positions: number[],
   uvs: number[],
@@ -76,7 +120,6 @@ function pushTri(
   uvs.push(u0, v0, u1, v1, u2, v2);
 }
 
-/** Curved sky patch matching Stellarium's triangle tessellation over the full texture. */
 export function createStellariumIllustrationGeometry(
   divisions = ILLUSTRATION_TESSELLATION_DIVISIONS,
 ): THREE.BufferGeometry {
@@ -100,23 +143,47 @@ export function createStellariumIllustrationGeometry(
   return geometry;
 }
 
-export function updateStellariumIllustrationGeometry(
+/** Bake J2000 unit directions for each vertex (Stellarium artPolygon.vertex at load time). */
+export function bakeEquatorialIllustrationDirections(
   geometry: THREE.BufferGeometry,
   transform: THREE.Matrix4,
   texSizeX: number,
   texSizeY: number,
+  scratch: THREE.Vector3,
+): void {
+  const uvAttr = geometry.getAttribute('uv') as THREE.BufferAttribute;
+  const eqDirs = new Float32Array(uvAttr.count * 3);
+
+  for (let i = 0; i < uvAttr.count; i++) {
+    const { px, py } = stellariumPixelCoords(
+      uvAttr.getX(i),
+      uvAttr.getY(i),
+      texSizeX,
+      texSizeY,
+    );
+    projectStellariumTexCoord(transform, px, py, scratch);
+    eqDirs[i * 3] = scratch.x;
+    eqDirs[i * 3 + 1] = scratch.y;
+    eqDirs[i * 3 + 2] = scratch.z;
+  }
+
+  geometry.setAttribute('eqDirection', new THREE.BufferAttribute(eqDirs, 3));
+}
+
+export function updateStellariumIllustrationGeometry(
+  geometry: THREE.BufferGeometry,
+  eqToHor: THREE.Matrix4,
   sphereRadius: number,
   inset: number,
   scratch: THREE.Vector3,
 ): void {
   const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
-  const uvAttr = geometry.getAttribute('uv') as THREE.BufferAttribute;
-  const r = sphereRadius - inset;
+  const eqAttr = geometry.getAttribute('eqDirection') as THREE.BufferAttribute | undefined;
+  if (!eqAttr) return;
 
+  const r = sphereRadius - inset;
   for (let i = 0; i < posAttr.count; i++) {
-    const u = uvAttr.getX(i);
-    const v = uvAttr.getY(i);
-    projectStellariumTexCoord(transform, u * texSizeX, v * texSizeY, scratch);
+    scratch.set(eqAttr.getX(i), eqAttr.getY(i), eqAttr.getZ(i)).applyMatrix4(eqToHor);
     posAttr.setXYZ(i, scratch.x * r, scratch.y * r, scratch.z * r);
   }
 

@@ -4,11 +4,23 @@ import { constellationIllustrationUrl } from './constellationIllustrations';
 import { deriveConstellationLines } from './catalogLines';
 import { getIllustrationMetadata } from './catalogIllustrations';
 import {
+  createIllustrationMaterial,
+  getIllustrationMap,
+  setIllustrationArMode,
+  setIllustrationMap,
+  setIllustrationOpacity,
+  type IllustrationMaterial,
+} from './illustrationMaterial';
+import {
+  bakeEquatorialIllustrationDirections,
   buildStellariumImageTransform,
+  computeEquatorialToHorizontalRotation,
   createStellariumIllustrationGeometry,
+  spheToRect,
   updateStellariumIllustrationGeometry,
 } from './illustrationAlign';
 import {
+  altAzToDirection,
   altAzToWorldPosition,
   createObserver,
   magnitudeToPointSize,
@@ -84,6 +96,7 @@ interface LineEntry {
 interface IllustrationEntry {
   mesh: THREE.Mesh;
   fade: number;
+  equatorialReady: boolean;
 }
 
 function lineKey(fromId: string, toId: string): string {
@@ -143,10 +156,13 @@ export class SkyScene {
   private readonly edgeAnimations = new Map<string, number>();
   private readonly projectedStar = new THREE.Vector3();
   private readonly worldStar = new THREE.Vector3();
-  private readonly illustrationStarDir0 = new THREE.Vector3();
-  private readonly illustrationStarDir1 = new THREE.Vector3();
-  private readonly illustrationStarDir2 = new THREE.Vector3();
-  private readonly illustrationTransform = new THREE.Matrix4();
+  private readonly illustrationEqDir0 = new THREE.Vector3();
+  private readonly illustrationEqDir1 = new THREE.Vector3();
+  private readonly illustrationEqDir2 = new THREE.Vector3();
+  private readonly illustrationHorDir0 = new THREE.Vector3();
+  private readonly illustrationHorDir1 = new THREE.Vector3();
+  private readonly illustrationHorDir2 = new THREE.Vector3();
+  private readonly illustrationEqToHor = new THREE.Matrix4();
   private readonly illustrationProjectScratch = new THREE.Vector3();
   private positions = new Float32Array(0);
   private pointOpacities = new Float32Array(0);
@@ -203,6 +219,10 @@ export class SkyScene {
     const material = this.points?.material as THREE.ShaderMaterial | undefined;
     if (material?.uniforms?.sizeScale) {
       material.uniforms.sizeScale.value = boost > 1 ? 1.75 : 1;
+    }
+    const arMode = boost > 1;
+    for (const entry of this.illustrationByConstellation.values()) {
+      setIllustrationArMode(entry.mesh.material as IllustrationMaterial, arMode);
     }
     this.updateStarPositions(new Date(), true);
   }
@@ -731,8 +751,7 @@ export class SkyScene {
       const entry = this.illustrationByConstellation.get(constellationId);
       if (!entry) continue;
       entry.fade = 1;
-      const material = entry.mesh.material as THREE.MeshBasicMaterial;
-      material.opacity = ILLUSTRATION_MAX_OPACITY;
+      setIllustrationOpacity(entry.mesh.material as IllustrationMaterial, ILLUSTRATION_MAX_OPACITY);
     }
   }
 
@@ -776,16 +795,7 @@ export class SkyScene {
     const url = name ? constellationIllustrationUrl(name) : undefined;
     if (!url) return;
 
-    const mesh = new THREE.Mesh(
-      createStellariumIllustrationGeometry(),
-      new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        depthTest: true,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
+    const mesh = new THREE.Mesh(createStellariumIllustrationGeometry(), createIllustrationMaterial());
     mesh.visible = false;
     mesh.renderOrder = -1;
     mesh.userData.constellationId = constellationId;
@@ -793,19 +803,60 @@ export class SkyScene {
     this.illustrationByConstellation.set(constellationId, {
       mesh,
       fade: 0,
+      equatorialReady: false,
     });
 
     this.textureLoader.load(url, (texture) => {
       if (!this.illustrationByConstellation.has(constellationId)) return;
 
-      texture.colorSpace = THREE.SRGBColorSpace;
-      const material = mesh.material as THREE.MeshBasicMaterial;
-      material.map = texture;
-      material.side = THREE.DoubleSide;
-      material.needsUpdate = true;
+      const material = mesh.material as IllustrationMaterial;
+      setIllustrationMap(material, texture);
+      setIllustrationArMode(material, this.visualBoost > 1);
       mesh.visible = true;
+      this.bakeIllustrationEquatorial(constellationId);
       this.updateIllustrationLayout(constellationId);
     });
+  }
+
+  private bakeIllustrationEquatorial(constellationId: string): void {
+    const entry = this.illustrationByConstellation.get(constellationId);
+    if (!entry || entry.equatorialReady) return;
+
+    const iau = this.constellationIau.get(constellationId) ?? '';
+    const meta = getIllustrationMetadata(iau);
+    if (!meta || meta.anchors.length < 3) return;
+
+    const [texSizeX, texSizeY] = meta.size;
+    const anchors = meta.anchors.slice(0, 3) as [
+      (typeof meta.anchors)[0],
+      (typeof meta.anchors)[0],
+      (typeof meta.anchors)[0],
+    ];
+
+    const eqDirs: [THREE.Vector3, THREE.Vector3, THREE.Vector3] = [
+      this.illustrationEqDir0,
+      this.illustrationEqDir1,
+      this.illustrationEqDir2,
+    ];
+    for (let i = 0; i < 3; i++) {
+      const star = this.starByHip.get(anchors[i].hip);
+      if (!star) return;
+      spheToRect(star.star.raHours, star.star.decDeg, eqDirs[i]);
+    }
+
+    const transform = new THREE.Matrix4();
+    if (!buildStellariumImageTransform(eqDirs, anchors, texSizeX, texSizeY, transform)) {
+      return;
+    }
+
+    bakeEquatorialIllustrationDirections(
+      entry.mesh.geometry,
+      transform,
+      texSizeX,
+      texSizeY,
+      this.illustrationProjectScratch,
+    );
+    entry.equatorialReady = true;
   }
 
   private hideIllustration(constellationId: string): void {
@@ -814,8 +865,8 @@ export class SkyScene {
 
     this.illustrationsGroup.remove(entry.mesh);
     entry.mesh.geometry.dispose();
-    const material = entry.mesh.material as THREE.MeshBasicMaterial;
-    material.map?.dispose();
+    const material = entry.mesh.material as IllustrationMaterial;
+    getIllustrationMap(material)?.dispose();
     material.dispose();
     this.illustrationByConstellation.delete(constellationId);
   }
@@ -833,14 +884,15 @@ export class SkyScene {
     for (const entry of this.illustrationByConstellation.values()) {
       if (this.showConstellations) {
         entry.fade = 1;
-        const material = entry.mesh.material as THREE.MeshBasicMaterial;
-        material.opacity = ILLUSTRATION_MAX_OPACITY;
+        setIllustrationOpacity(entry.mesh.material as IllustrationMaterial, ILLUSTRATION_MAX_OPACITY);
         continue;
       }
       if (entry.fade >= 1) continue;
       entry.fade = Math.min(entry.fade + speed * dt, 1);
-      const material = entry.mesh.material as THREE.MeshBasicMaterial;
-      material.opacity = entry.fade * ILLUSTRATION_MAX_OPACITY;
+      setIllustrationOpacity(
+        entry.mesh.material as IllustrationMaterial,
+        entry.fade * ILLUSTRATION_MAX_OPACITY,
+      );
     }
   }
 
@@ -850,51 +902,50 @@ export class SkyScene {
     }
   }
 
-  private updateIllustrationLayout(constellationId: string, _date = new Date()): void {
+  private updateIllustrationLayout(constellationId: string, date = new Date()): void {
     const entry = this.illustrationByConstellation.get(constellationId);
     if (!entry) return;
 
     const mesh = entry.mesh;
-    const material = mesh.material as THREE.MeshBasicMaterial;
-    if (!material.map) return;
+    const material = mesh.material as IllustrationMaterial;
+    if (!getIllustrationMap(material)) return;
+
+    if (!entry.equatorialReady) {
+      this.bakeIllustrationEquatorial(constellationId);
+      if (!entry.equatorialReady) return;
+    }
 
     const iau = this.constellationIau.get(constellationId) ?? '';
     const meta = getIllustrationMetadata(iau);
     if (!meta || meta.anchors.length < 3) return;
 
-    const [texSizeX, texSizeY] = meta.size;
-    const anchors = meta.anchors.slice(0, 3) as [
-      (typeof meta.anchors)[0],
-      (typeof meta.anchors)[0],
-      (typeof meta.anchors)[0],
+    const anchors = meta.anchors.slice(0, 3);
+    const eqDirs: [THREE.Vector3, THREE.Vector3, THREE.Vector3] = [
+      this.illustrationEqDir0,
+      this.illustrationEqDir1,
+      this.illustrationEqDir2,
+    ];
+    const horDirs: [THREE.Vector3, THREE.Vector3, THREE.Vector3] = [
+      this.illustrationHorDir0,
+      this.illustrationHorDir1,
+      this.illustrationHorDir2,
     ];
 
-    const starDirs: [THREE.Vector3, THREE.Vector3, THREE.Vector3] = [
-      this.illustrationStarDir0,
-      this.illustrationStarDir1,
-      this.illustrationStarDir2,
-    ];
     for (let i = 0; i < 3; i++) {
       const star = this.starByHip.get(anchors[i].hip);
       if (!star) return;
-      starDirs[i].copy(star.glow.position).normalize();
+      spheToRect(star.star.raHours, star.star.decDeg, eqDirs[i]);
+      const { altitude, azimuth } = starHorizontalPosition(
+        star.star.raHours,
+        star.star.decDeg,
+        this.observer,
+        date,
+      );
+      horDirs[i].copy(altAzToDirection(azimuth, altitude));
     }
 
-    if (
-      !buildStellariumImageTransform(
-        starDirs,
-        anchors,
-        texSizeX,
-        texSizeY,
-        this.illustrationTransform,
-      )
-    ) {
+    if (!computeEquatorialToHorizontalRotation(eqDirs, horDirs, this.illustrationEqToHor)) {
       return;
-    }
-
-    if (material.map) {
-      material.map.flipY = false;
-      material.map.needsUpdate = true;
     }
 
     mesh.position.set(0, 0, 0);
@@ -903,9 +954,7 @@ export class SkyScene {
 
     updateStellariumIllustrationGeometry(
       mesh.geometry,
-      this.illustrationTransform,
-      texSizeX,
-      texSizeY,
+      this.illustrationEqToHor,
       SKY_SPHERE_RADIUS,
       ILLUSTRATION_INSET,
       this.illustrationProjectScratch,

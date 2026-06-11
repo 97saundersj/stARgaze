@@ -1084,6 +1084,14 @@
           "raHours": 7.14,
           "decDeg": -26.393,
           "mag": 1.83
+        },
+        {
+          "id": "aludra",
+          "name": "Aludra",
+          "hip": 35904,
+          "raHours": 7.402,
+          "decDeg": -29.303,
+          "mag": 2.45
         }
       ]
     },
@@ -1202,6 +1210,14 @@
           "raHours": 16.9,
           "decDeg": -42.362,
           "mag": 4.7
+        },
+        {
+          "id": "zeta2_sco",
+          "name": "ζ2 Sco",
+          "hip": 82729,
+          "raHours": 16.91,
+          "decDeg": -42.361,
+          "mag": 3.62
         },
         {
           "id": "eta_sco",
