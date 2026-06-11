@@ -44,6 +44,9 @@ canvas {
   font-size: 0.85rem;
   text-align: center;
   color: #d4af37;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #preview-banner.hidden {
@@ -123,6 +126,8 @@ canvas {
 
 #ar-button-container {
   pointer-events: auto;
+  position: relative;
+  z-index: 20;
 }
 
 #ar-button-container.button-row {
@@ -141,6 +146,8 @@ canvas {
   background: rgba(10, 13, 26, 0.9);
   color: #d4af37;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: background 0.2s, color 0.2s;
 }
 
@@ -152,4 +159,8 @@ canvas {
 #ar-button-container button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+#ar-button-container button.hidden {
+  display: none;
 }

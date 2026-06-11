@@ -6,14 +6,24 @@ export async function isARSupported(): Promise<boolean> {
   return navigator.xr.isSessionSupported('immersive-ar');
 }
 
+function referenceSpaceTypeForSession(session: XRSession): XRReferenceSpaceType {
+  const features = session.enabledFeatures ?? [];
+  if (features.includes('local-floor')) return 'local-floor';
+  if (features.includes('local')) return 'local';
+  return 'viewer';
+}
+
 export function createARButton(
   renderer: WebGLRenderer,
   container: HTMLElement,
   overlayRoot: HTMLElement,
-  onSessionStart: () => void,
+  onBeforeSession: () => void,
+  onSessionStart: () => void | Promise<void>,
   onSessionEnd: () => void,
+  onSessionError: (message: string) => void,
 ): HTMLButtonElement {
   const button = document.createElement('button');
+  button.type = 'button';
   button.textContent = 'Enter AR';
   button.disabled = true;
 
@@ -34,22 +44,35 @@ export function createARButton(
 
     if (!navigator.xr) return;
 
+    const previousLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Starting AR…';
+
     try {
+      onBeforeSession();
       const session = await requestARSession(overlayRoot);
+      renderer.xr.setReferenceSpaceType(referenceSpaceTypeForSession(session));
+      await renderer.xr.setSession(session);
 
       currentSession = session;
       button.textContent = 'Exit AR';
+      button.disabled = false;
 
-      await renderer.xr.setSession(session);
-      onSessionStart();
+      await onSessionStart();
 
       session.addEventListener('end', () => {
         currentSession = null;
         button.textContent = 'Enter AR';
+        button.disabled = false;
         onSessionEnd();
       });
     } catch (err) {
       console.error('Failed to start AR session:', err);
+      button.textContent = previousLabel;
+      button.disabled = false;
+      const message =
+        err instanceof Error ? err.message : 'Could not start AR. Try Chrome on Android over HTTPS.';
+      onSessionError(message);
     }
   });
 
@@ -160,18 +183,32 @@ export function setupXRRenderer(renderer: WebGLRenderer): void {
 }
 
 async function requestARSession(overlayRoot: HTMLElement): Promise<XRSession> {
-  const withDomOverlay: XRSessionInit = {
-    requiredFeatures: ['local-floor'],
-    optionalFeatures: ['hit-test', 'dom-overlay'],
-    domOverlay: { root: overlayRoot },
-  };
-
-  try {
-    return await navigator.xr!.requestSession('immersive-ar', withDomOverlay);
-  } catch {
-    return await navigator.xr!.requestSession('immersive-ar', {
-      requiredFeatures: ['local-floor'],
+  const attempts: XRSessionInit[] = [
+    {
+      optionalFeatures: ['local-floor', 'hit-test', 'dom-overlay'],
+      domOverlay: { root: overlayRoot },
+    },
+    {
+      optionalFeatures: ['hit-test', 'dom-overlay'],
+      domOverlay: { root: overlayRoot },
+    },
+    {
+      optionalFeatures: ['local-floor', 'hit-test'],
+    },
+    {
       optionalFeatures: ['hit-test'],
-    });
+    },
+    {},
+  ];
+
+  let lastError: unknown;
+  for (const init of attempts) {
+    try {
+      return await navigator.xr!.requestSession('immersive-ar', init);
+    } catch (err) {
+      lastError = err;
+    }
   }
+
+  throw lastError instanceof Error ? lastError : new Error('AR session not supported on this device');
 }

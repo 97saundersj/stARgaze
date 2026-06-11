@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import starCatalog from '../data/starCatalog.json';
+import { constellationIllustrationUrl } from './constellationIllustrations';
 import { deriveConstellationLines } from './catalogLines';
 import {
   altAzToWorldPosition,
@@ -20,6 +21,12 @@ const FOUND_STAR_SCALE = 1.45;
 const HIT_RADIUS_MULTIPLIER = 14;
 const HIT_RADIUS_MIN = SKY_SPHERE_RADIUS * 0.03;
 const TAP_SNAP_RADIUS_PX = 56;
+/** Screen-distance penalty so found stars don't steal taps from close neighbors. */
+const FOUND_STAR_TAP_PENALTY = 3;
+const ILLUSTRATION_INSET = 3;
+const ILLUSTRATION_PADDING = 1.4;
+const ILLUSTRATION_FADE_DURATION = 0.9;
+const ILLUSTRATION_MAX_OPACITY = 0.92;
 
 export interface CatalogStar {
   id: string;
@@ -69,6 +76,11 @@ interface LineEntry {
   growToId: string | null;
 }
 
+interface IllustrationEntry {
+  mesh: THREE.Mesh;
+  fade: number;
+}
+
 function lineKey(fromId: string, toId: string): string {
   return `${fromId}:${toId}`;
 }
@@ -105,6 +117,7 @@ function createSkyLineMeshes(): { mesh: THREE.Mesh; glow: THREE.Mesh } {
 
 export class SkyScene {
   readonly group = new THREE.Group();
+  readonly illustrationsGroup = new THREE.Group();
   readonly starsGroup = new THREE.Group();
   readonly linesGroup = new THREE.Group();
 
@@ -113,23 +126,33 @@ export class SkyScene {
   private readonly lineByKey = new Map<string, LineEntry>();
   private readonly starById = new Map<string, StarEntry>();
   private readonly constellationStarCounts = new Map<string, number>();
+  private readonly constellationNames = new Map<string, string>();
+  private readonly illustrationByConstellation = new Map<string, IllustrationEntry>();
   private readonly foundStars = new Set<string>();
+  private readonly textureLoader = new THREE.TextureLoader();
   private readonly hitMeshes: THREE.Mesh[] = [];
   private readonly edgeAnimations = new Map<string, number>();
-  private readonly raycaster = new THREE.Raycaster();
   private readonly projectedStar = new THREE.Vector3();
+  private readonly worldStar = new THREE.Vector3();
+  private readonly illustrationCenter = new THREE.Vector3();
+  private readonly illustrationRight = new THREE.Vector3();
+  private readonly illustrationUp = new THREE.Vector3();
+  private readonly illustrationNormal = new THREE.Vector3();
+  private readonly illustrationRelative = new THREE.Vector3();
   private positions = new Float32Array(0);
   private pointOpacities = new Float32Array(0);
   private points: THREE.Points | null = null;
   private observer = createObserver({ latitude: 48.85, longitude: 2.35, elevationM: 35 });
   private lastUpdateMs = 0;
-  private readonly updateIntervalMs = 2000;
+  private readonly updateIntervalMs = 60000;
   private visibleStarCount = 0;
   private activeConstellationId: string | null = null;
   private readonly tapOrder: string[] = [];
   private lastTappedStarId: string | null = null;
+  private visualBoost = 1;
 
   constructor() {
+    this.group.add(this.illustrationsGroup);
     this.group.add(this.starsGroup);
     this.group.add(this.linesGroup);
     this.buildFromCatalog(starCatalog.constellations as CatalogConstellation[]);
@@ -150,6 +173,15 @@ export class SkyScene {
     return entry?.constellationName ?? null;
   }
 
+  setVisualBoost(boost: number): void {
+    this.visualBoost = boost;
+    const material = this.points?.material as THREE.ShaderMaterial | undefined;
+    if (material?.uniforms?.sizeScale) {
+      material.uniforms.sizeScale.value = boost > 1 ? 1.75 : 1;
+    }
+    this.updateStarPositions(new Date(), true);
+  }
+
   resetProgress(): void {
     this.foundStars.clear();
     this.activeConstellationId = null;
@@ -167,6 +199,7 @@ export class SkyScene {
       line.growToId = null;
       this.setLineProgress(line.lineKey, 0);
     }
+    this.clearAllIllustrations();
     this.refreshStarBrightness();
   }
 
@@ -177,6 +210,7 @@ export class SkyScene {
 
   update(timeMs: number, dt: number, date = new Date()): void {
     this.updateLineAnimations(dt);
+    this.updateIllustrationFades(dt);
     if (timeMs - this.lastUpdateMs >= this.updateIntervalMs) {
       this.updateStarPositions(date);
       this.lastUpdateMs = timeMs;
@@ -193,17 +227,40 @@ export class SkyScene {
     viewportWidth: number,
     viewportHeight: number,
   ): SkyTapResult | null {
-    this.raycaster.setFromCamera(ndc, camera);
-    this.raycaster.far = SKY_SPHERE_RADIUS * 1.5;
-    const hits = this.raycaster.intersectObjects(this.getHitMeshes(), false);
-    if (hits.length > 0) {
-      const starId = hits[0].object.userData.starId as string;
-      return this.tapStar(starId);
-    }
-
     const nearestStarId = this.findNearestVisibleStar(ndc, camera, viewportWidth, viewportHeight);
     if (!nearestStarId) return null;
     return this.tapStar(nearestStarId);
+  }
+
+  tapFromRay(origin: THREE.Vector3, direction: THREE.Vector3): SkyTapResult | null {
+    const dir = direction.clone().normalize();
+    const snapAngleCos = Math.cos(THREE.MathUtils.degToRad(4.5));
+    let bestStarId: string | null = null;
+    let bestScore = snapAngleCos;
+
+    for (const entry of this.starEntries) {
+      if (!entry.hit.visible) continue;
+
+      entry.hit.getWorldPosition(this.worldStar);
+      this.worldStar.sub(origin);
+      const dist = this.worldStar.length();
+      if (dist < 0.001) continue;
+      this.worldStar.divideScalar(dist);
+
+      const alignment = dir.dot(this.worldStar);
+      if (alignment < snapAngleCos) continue;
+
+      const score = this.foundStars.has(entry.star.id)
+        ? alignment / FOUND_STAR_TAP_PENALTY
+        : alignment;
+      if (score > bestScore) {
+        bestScore = score;
+        bestStarId = entry.star.id;
+      }
+    }
+
+    if (!bestStarId) return null;
+    return this.tapStar(bestStarId);
   }
 
   private findNearestVisibleStar(
@@ -214,19 +271,25 @@ export class SkyScene {
   ): string | null {
     const snapRadiusSq = TAP_SNAP_RADIUS_PX * TAP_SNAP_RADIUS_PX;
     let bestStarId: string | null = null;
-    let bestDistSq = snapRadiusSq;
+    let bestScore = snapRadiusSq;
 
     for (const entry of this.starEntries) {
       if (!entry.hit.visible) continue;
 
-      this.projectedStar.copy(entry.hit.position).project(camera);
+      entry.hit.getWorldPosition(this.projectedStar);
+      this.projectedStar.project(camera);
       if (this.projectedStar.z > 1) continue;
 
       const pxX = (this.projectedStar.x - ndc.x) * 0.5 * viewportWidth;
       const pxY = (this.projectedStar.y - ndc.y) * 0.5 * viewportHeight;
       const distSq = pxX * pxX + pxY * pxY;
-      if (distSq < bestDistSq) {
-        bestDistSq = distSq;
+      if (distSq >= snapRadiusSq) continue;
+
+      const score = this.foundStars.has(entry.star.id)
+        ? distSq * FOUND_STAR_TAP_PENALTY
+        : distSq;
+      if (score < bestScore) {
+        bestScore = score;
         bestStarId = entry.star.id;
       }
     }
@@ -270,6 +333,7 @@ export class SkyScene {
     const constellationComplete = foundInConstellation >= total;
     if (constellationComplete) {
       this.activeConstellationId = null;
+      this.revealIllustration(entry.constellationId);
     }
 
     return {
@@ -288,6 +352,7 @@ export class SkyScene {
 
     for (const constellation of constellations) {
       this.constellationStarCounts.set(constellation.id, constellation.stars.length);
+      this.constellationNames.set(constellation.id, constellation.name);
       for (const star of constellation.stars) {
         allStars.push({
           star,
@@ -373,17 +438,22 @@ export class SkyScene {
     geometry.setAttribute('opacity', new THREE.BufferAttribute(this.pointOpacities, 1));
 
     const pointsMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        sizeScale: { value: 1 },
+      },
       transparent: true,
       depthWrite: false,
+      depthTest: false,
       blending: THREE.AdditiveBlending,
       vertexShader: `
+        uniform float sizeScale;
         attribute float size;
         attribute float opacity;
         varying float vOpacity;
         void main() {
           vOpacity = opacity;
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = size * (380.0 / -mvPosition.z);
+          gl_PointSize = size * sizeScale * (380.0 / -mvPosition.z);
           gl_Position = projectionMatrix * mvPosition;
         }
       `,
@@ -428,6 +498,7 @@ export class SkyScene {
       this.setLineProgress(line.lineKey, 0);
     }
 
+    this.hideIllustration(constellationId);
     this.refreshStarBrightness();
   }
 
@@ -553,9 +624,10 @@ export class SkyScene {
 
       const idx = entry.index;
       const pointOpacity = 0.85 + 0.15 * (1.4 - entry.star.mag) / 1.4;
+      const boosted = pointOpacity * this.visualBoost;
       this.pointOpacities[idx] = this.foundStars.has(entry.star.id)
-        ? Math.min(1, pointOpacity * 1.4)
-        : pointOpacity;
+        ? Math.min(1, boosted * 1.4)
+        : Math.min(1, boosted);
       entry.baseGlowOpacity = pointOpacity;
 
       const pos = altAzToWorldPosition(azimuth, altitude, SKY_SPHERE_RADIUS);
@@ -598,6 +670,128 @@ export class SkyScene {
       line.mesh.userData.aboveHorizon = true;
       this.setLineProgress(line.lineKey, line.progress);
     }
+
+    this.updateIllustrationLayouts();
+  }
+
+  private revealIllustration(constellationId: string): void {
+    if (this.illustrationByConstellation.has(constellationId)) return;
+
+    const name = this.constellationNames.get(constellationId);
+    const url = name ? constellationIllustrationUrl(name) : undefined;
+    if (!url) return;
+
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: true,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    mesh.visible = false;
+    mesh.renderOrder = -1;
+    mesh.userData.constellationId = constellationId;
+    this.illustrationsGroup.add(mesh);
+    this.illustrationByConstellation.set(constellationId, { mesh, fade: 0 });
+
+    this.textureLoader.load(url, (texture) => {
+      if (!this.illustrationByConstellation.has(constellationId)) return;
+
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = mesh.material as THREE.MeshBasicMaterial;
+      material.map = texture;
+      material.needsUpdate = true;
+      mesh.visible = true;
+      this.updateIllustrationLayout(constellationId);
+    });
+  }
+
+  private hideIllustration(constellationId: string): void {
+    const entry = this.illustrationByConstellation.get(constellationId);
+    if (!entry) return;
+
+    this.illustrationsGroup.remove(entry.mesh);
+    entry.mesh.geometry.dispose();
+    const material = entry.mesh.material as THREE.MeshBasicMaterial;
+    material.map?.dispose();
+    material.dispose();
+    this.illustrationByConstellation.delete(constellationId);
+  }
+
+  private clearAllIllustrations(): void {
+    for (const constellationId of [...this.illustrationByConstellation.keys()]) {
+      this.hideIllustration(constellationId);
+    }
+  }
+
+  private updateIllustrationFades(dt: number): void {
+    if (this.illustrationByConstellation.size === 0) return;
+
+    const speed = 1 / ILLUSTRATION_FADE_DURATION;
+    for (const entry of this.illustrationByConstellation.values()) {
+      if (entry.fade >= 1) continue;
+      entry.fade = Math.min(entry.fade + speed * dt, 1);
+      const material = entry.mesh.material as THREE.MeshBasicMaterial;
+      material.opacity = entry.fade * ILLUSTRATION_MAX_OPACITY;
+    }
+  }
+
+  private updateIllustrationLayouts(): void {
+    for (const constellationId of this.illustrationByConstellation.keys()) {
+      this.updateIllustrationLayout(constellationId);
+    }
+  }
+
+  private updateIllustrationLayout(constellationId: string): void {
+    const entry = this.illustrationByConstellation.get(constellationId);
+    if (!entry) return;
+
+    const mesh = entry.mesh;
+    const material = mesh.material as THREE.MeshBasicMaterial;
+    if (!material.map) return;
+
+    let starCount = 0;
+    this.illustrationCenter.set(0, 0, 0);
+    for (const starEntry of this.starEntries) {
+      if (starEntry.constellationId !== constellationId) continue;
+      this.illustrationCenter.add(starEntry.glow.position);
+      starCount++;
+    }
+    if (starCount === 0) return;
+
+    this.illustrationCenter.divideScalar(starCount);
+    this.illustrationNormal.copy(this.illustrationCenter).normalize();
+
+    this.illustrationRight.set(0, 1, 0).cross(this.illustrationNormal);
+    if (this.illustrationRight.lengthSq() < 1e-4) {
+      this.illustrationRight.set(1, 0, 0);
+    } else {
+      this.illustrationRight.normalize();
+    }
+    this.illustrationUp.crossVectors(this.illustrationNormal, this.illustrationRight).normalize();
+
+    let maxU = 0;
+    let maxV = 0;
+    for (const starEntry of this.starEntries) {
+      if (starEntry.constellationId !== constellationId) continue;
+      this.illustrationRelative.copy(starEntry.glow.position).sub(this.illustrationCenter);
+      maxU = Math.max(maxU, Math.abs(this.illustrationRelative.dot(this.illustrationRight)));
+      maxV = Math.max(maxV, Math.abs(this.illustrationRelative.dot(this.illustrationUp)));
+    }
+
+    const width = Math.max(maxU * 2 * ILLUSTRATION_PADDING, SKY_SPHERE_RADIUS * 0.04);
+    const image = material.map.image as { width: number; height: number };
+    const aspect = image.width / image.height;
+    const height = width / aspect;
+
+    mesh.scale.set(width, height, 1);
+    mesh.position
+      .copy(this.illustrationNormal)
+      .multiplyScalar(SKY_SPHERE_RADIUS - ILLUSTRATION_INSET);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), this.illustrationNormal.clone().negate());
   }
 
   private bindLineGeometry(line: LineEntry, from: THREE.Vector3, to: THREE.Vector3): void {
