@@ -37,6 +37,7 @@ export interface SkyModeController {
   snapshotSkyOrientation: (camera: THREE.PerspectiveCamera) => void;
   setCameraProvider: (provider: () => THREE.Camera) => void;
   setStarTapHandler: (handler: (result: SkyTapResult) => void) => void;
+  setShowConstellations: (show: boolean) => void;
   tryTapAt: (clientX: number, clientY: number, domElement: HTMLElement) => SkyTapResult | null;
   tryTapFromRay: (origin: THREE.Vector3, direction: THREE.Vector3) => SkyTapResult | null;
 }
@@ -458,6 +459,9 @@ export function createSkyModeController(): SkyModeController {
     },
     setStarTapHandler(handler: (result: SkyTapResult) => void) {
       onStarTap = handler;
+    },
+    setShowConstellations(show: boolean) {
+      skyScene.setShowConstellations(show);
     },
     tryTapAt,
     tryTapFromRay(origin: THREE.Vector3, direction: THREE.Vector3) {

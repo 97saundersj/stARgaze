@@ -164,3 +164,8 @@ canvas {
 #ar-button-container button.hidden {
   display: none;
 }
+
+#ar-button-container button.active {
+  background: #d4af37;
+  color: #0a0d1a;
+}

@@ -53,6 +53,7 @@ const AR_NORTH_CAPTURE_TIMEOUT_MS = 5000;
 const BANNER_TAPS_TO_UNLOCK_LOVERS = 3;
 const BANNER_TAP_RESET_MS = 2500;
 let skyButton: HTMLButtonElement | null = null;
+let showConstellationsButton: HTMLButtonElement | null = null;
 let loversUnlocked = false;
 let bannerTapCount = 0;
 let bannerTapResetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -163,9 +164,24 @@ async function enableSkyBackground(): Promise<void> {
   updateSkyBanner();
 }
 
+function updateShowConstellationsButton(): void {
+  if (!showConstellationsButton) return;
+  const show = skyMode.skyScene.getShowConstellations();
+  showConstellationsButton.textContent = show ? 'Hide Constellations' : 'Show Constellations';
+  showConstellationsButton.classList.toggle('active', show);
+}
+
+function setShowConstellationsButtonVisible(visible: boolean): void {
+  showConstellationsButton?.classList.toggle('hidden', !visible);
+}
+
 function disableSkyBackground(): void {
   if (!skyBackgroundActive) return;
 
+  if (skyMode.skyScene.getShowConstellations()) {
+    skyMode.setShowConstellations(false);
+    updateShowConstellationsButton();
+  }
   skyMode.stop();
   skyMode.detachSkyToScene(scene);
   skyMode.loversOverlay.unmountConstellation(constellationScene.group, scene);
@@ -223,6 +239,7 @@ function unmountLoversOverlay(): void {
 
 function setPreviewMode(): void {
   appMode = 'preview';
+  setShowConstellationsButtonVisible(false);
   disableSkyBackground();
   renderer.setClearColor(0x0a0d1a, 1);
   previewBanner.classList.remove('hidden');
@@ -241,6 +258,7 @@ async function enterSkyMode(): Promise<void> {
   previewBanner.classList.remove('hidden');
 
   await enableSkyBackground();
+  setShowConstellationsButtonVisible(true);
   if (loversUnlocked) {
     mountLoversOverlay();
   }
@@ -276,6 +294,7 @@ async function enterARMode(): Promise<void> {
   previewBanner.classList.remove('hidden');
 
   await enableSkyBackground();
+  setShowConstellationsButtonVisible(true);
   skyMode.setLookActive(false);
   skyMode.setSkyTapActive(true);
   skyMode.setOrientationDrivingCamera(false);
@@ -378,6 +397,20 @@ function updateModeButtonLabel(): void {
   skyButton.textContent = appMode === 'sky' ? 'The Lovers' : 'Sky Map';
 }
 
+function createShowConstellationsButton(): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.textContent = 'Show Constellations';
+  button.className = 'show-constellations-button';
+
+  button.addEventListener('click', () => {
+    const next = !skyMode.skyScene.getShowConstellations();
+    skyMode.setShowConstellations(next);
+    updateShowConstellationsButton();
+  });
+
+  return button;
+}
+
 function createModeButton(): HTMLButtonElement {
   const button = document.createElement('button');
   button.textContent = 'The Lovers';
@@ -408,6 +441,9 @@ async function init(): Promise<void> {
   skyButton = createModeButton();
   skyButton.classList.add('hidden');
   arButtonContainer.appendChild(skyButton);
+
+  showConstellationsButton = createShowConstellationsButton();
+  arButtonContainer.appendChild(showConstellationsButton);
 
   previewBanner.addEventListener('click', onBannerTap);
 
