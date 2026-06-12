@@ -184,7 +184,6 @@ export class SkyScene {
     this.group.add(this.starsGroup);
     this.group.add(this.linesGroup);
     this.buildFromCatalog(starCatalog.constellations as CatalogConstellation[]);
-    this.updateStarPositions(new Date(), true);
   }
 
   getVisibleStarCount(): number {

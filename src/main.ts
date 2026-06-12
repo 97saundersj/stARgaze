@@ -150,6 +150,8 @@ function updateSkyBanner(): void {
       : 'Sky map — drag or point your phone at the sky';
   if (appMode === 'ar' && renderer.xr.isPresenting && !skyMode.hasArNorthAlignment()) {
     base = 'AR sky map — calibrating compass… face north if stars look misaligned';
+  } else if (appMode === 'sky' && !skyMode.isSkyNorthAligned()) {
+    base = 'Calibrating compass — hold phone steady';
   }
   previewBanner.textContent = skyMode.errorMessage ?? `${base} (${count} stars visible)`;
 }
@@ -175,6 +177,7 @@ function updateHorizonTransform(headCamera: THREE.Camera, inXr: boolean): void {
     horizonVisual.followPosition(headCamera);
   } else if (appMode === 'sky') {
     horizonVisual.resetTransform();
+    horizonVisual.group.rotation.y = skyMode.getSkyNorthOffsetY();
   }
 }
 

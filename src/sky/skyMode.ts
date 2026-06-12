@@ -38,6 +38,8 @@ export interface SkyModeController {
   setCameraProvider: (provider: () => THREE.Camera) => void;
   setStarTapHandler: (handler: (result: SkyTapResult) => void) => void;
   setShowConstellations: (show: boolean) => void;
+  getSkyNorthOffsetY: () => number;
+  isSkyNorthAligned: () => boolean;
   tryTapAt: (clientX: number, clientY: number, domElement: HTMLElement) => SkyTapResult | null;
   tryTapFromRay: (origin: THREE.Vector3, direction: THREE.Vector3) => SkyTapResult | null;
 }
@@ -49,6 +51,7 @@ const AR_NORTH_PRECALIBRATED_SAMPLE_COUNT = 3;
 const AR_NORTH_MAX_SAMPLE_SPREAD = THREE.MathUtils.degToRad(12);
 const AR_SKY_VISUAL_BOOST = 2.2;
 const SKY_NORTH_TRACKING = 0.14;
+const DEFAULT_OBSERVER = { latitude: 48.85, longitude: 2.35, elevationM: 35 };
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const northCompensateQuat = new THREE.Quaternion();
 const northDevConjugate = new THREE.Quaternion();
@@ -123,6 +126,7 @@ export function createSkyModeController(): SkyModeController {
   let downPointerX = 0;
   let downPointerY = 0;
   let skyNorthOffsetY = 0;
+  let skyNorthSnapped = false;
   let arNorthOffsetY = 0;
   let arNorthAligned = false;
   let sessionNorthOffsetY: number | null = null;
@@ -157,6 +161,12 @@ export function createSkyModeController(): SkyModeController {
 
     const targetOffset = targetSkyNorthOffset();
     if (targetOffset === null) return;
+
+    if (!skyNorthSnapped) {
+      finalizeSkyNorthAlignment();
+      skyNorthSnapped = true;
+      return;
+    }
 
     const delta = normalizeRadians(targetOffset - skyNorthOffsetY);
     if (Math.abs(delta) < 1e-5) return;
@@ -263,17 +273,19 @@ export function createSkyModeController(): SkyModeController {
       domElement = element;
       attachLookControls(element);
 
+      try {
+        const location = await deviceOrientation.requestGeolocation();
+        skyScene.setObserver(location);
+      } catch {
+        skyScene.setObserver(DEFAULT_OBSERVER);
+        errorMessage = 'Location unavailable. Using default observer (Paris).';
+      }
+
       if (isDeviceOrientationSupported()) {
         const permitted = await deviceOrientation.requestPermissions();
         if (!permitted) {
           errorMessage = 'Motion permission denied. Drag to look around.';
         } else {
-          try {
-            const location = await deviceOrientation.requestGeolocation();
-            skyScene.setObserver(location);
-          } catch {
-            errorMessage = 'Location unavailable. Using default observer (Paris).';
-          }
           deviceOrientation.setOnNorthLocked(() => finalizeSkyNorthAlignment());
           deviceOrientation.start();
         }
@@ -299,6 +311,7 @@ export function createSkyModeController(): SkyModeController {
       dragYaw = 0;
       dragPitch = -0.35;
       skyNorthOffsetY = 0;
+      skyNorthSnapped = false;
       arNorthOffsetY = 0;
       arNorthAligned = false;
       sessionNorthOffsetY = null;
@@ -462,6 +475,13 @@ export function createSkyModeController(): SkyModeController {
     },
     setShowConstellations(show: boolean) {
       skyScene.setShowConstellations(show);
+    },
+    getSkyNorthOffsetY() {
+      return skyNorthOffsetY;
+    },
+    isSkyNorthAligned() {
+      if (!orientationDrivesCamera || !deviceOrientation.isActive) return true;
+      return deviceOrientation.isNorthCalibrated;
     },
     tryTapAt,
     tryTapFromRay(origin: THREE.Vector3, direction: THREE.Vector3) {

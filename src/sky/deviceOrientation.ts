@@ -16,7 +16,70 @@ const SCREEN_Z = new THREE.Vector3(0, 0, 1);
 const CAMERA_FRAME_FIX = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
 const SCREEN_ORIENT_QUAT = new THREE.Quaternion();
 const DEVICE_EULER = new THREE.Euler(0, 0, 0, 'YXZ');
-const VIEW_FORWARD = new THREE.Vector3(0, 0, -1);
+const _yawForward = new THREE.Vector3();
+const _yawUp = new THREE.Vector3();
+
+/**
+ * Yaw about world-up, robust to pitch. When the view points near-vertical
+ * (e.g. up at the sky) the forward vector's horizontal projection becomes
+ * unstable, so we blend toward the screen-up vector, which is horizontal then.
+ * Without this, looking up gives a different heading on every reload.
+ */
+export function robustYawFromQuaternion(q: THREE.Quaternion): number {
+  _yawForward.set(0, 0, -1).applyQuaternion(q);
+  _yawUp.set(0, 1, 0).applyQuaternion(q);
+
+  const forwardHoriz = Math.hypot(_yawForward.x, _yawForward.z);
+  let fx = _yawForward.x;
+  let fz = _yawForward.z;
+  if (forwardHoriz > 1e-4) {
+    fx /= forwardHoriz;
+    fz /= forwardHoriz;
+  }
+
+  // Looking up (forward.y > 0): screen-up points toward the opposite heading.
+  const upSign = _yawForward.y >= 0 ? -1 : 1;
+  let ux = upSign * _yawUp.x;
+  let uz = upSign * _yawUp.z;
+  const upHoriz = Math.hypot(ux, uz);
+  if (upHoriz > 1e-4) {
+    ux /= upHoriz;
+    uz /= upHoriz;
+  }
+
+  const w = THREE.MathUtils.clamp((forwardHoriz - 0.15) / 0.2, 0, 1);
+  const bx = fx * w + ux * (1 - w);
+  const bz = fz * w + uz * (1 - w);
+  return Math.atan2(bx, -bz);
+}
+
+/**
+ * Tilt-compensated compass heading (degrees, clockwise from north) from raw
+ * deviceorientation angles. Matches iOS webkitCompassHeading convention so the
+ * Android absolute path uses the same reference frame.
+ */
+export function compassHeadingFromOrientation(
+  alphaDeg: number,
+  betaDeg: number,
+  gammaDeg: number,
+): number {
+  const x = THREE.MathUtils.degToRad(betaDeg);
+  const y = THREE.MathUtils.degToRad(gammaDeg);
+  const z = THREE.MathUtils.degToRad(alphaDeg);
+
+  const cY = Math.cos(y);
+  const cZ = Math.cos(z);
+  const sX = Math.sin(x);
+  const sY = Math.sin(y);
+  const sZ = Math.sin(z);
+
+  const vx = -cZ * sY - sZ * sX * cY;
+  const vy = -sZ * sY + cZ * sX * cY;
+
+  let heading = Math.atan2(vx, vy);
+  if (heading < 0) heading += 2 * Math.PI;
+  return THREE.MathUtils.radToDeg(heading);
+}
 
 export class DeviceOrientationController {
   private listening = false;
@@ -36,7 +99,6 @@ export class DeviceOrientationController {
   private static readonly ORIENTATION_SMOOTHING = 0.028;
   private static readonly COMPASS_SMOOTHING = 0.06;
   private static readonly NORTH_WARMUP_FRAMES = 90;
-  private static readonly NORTH_WARMUP_MAX_FRAMES = 150;
 
   get isActive(): boolean {
     return this.listening;
@@ -54,14 +116,18 @@ export class DeviceOrientationController {
     return this.northLocked;
   }
 
+  /** True once an absolute compass heading sample has been received. */
+  get isNorthReady(): boolean {
+    return this.compassHeading !== null;
+  }
+
   setOnNorthLocked(handler: (compassRadians: number | null) => void): void {
     this.onNorthLocked = handler;
   }
 
   /** Horizontal yaw of the view direction from the smoothed device quaternion. */
   getHorizontalViewYaw(): number {
-    const forward = VIEW_FORWARD.clone().applyQuaternion(this.displayQuaternion);
-    return Math.atan2(forward.x, -forward.z);
+    return robustYawFromQuaternion(this.displayQuaternion);
   }
 
   /** Smoothed compass heading in degrees, or null before the first sample. */
@@ -117,8 +183,8 @@ export class DeviceOrientationController {
     this.absoluteCompassHandler = (event: Event) => {
       if (this.northLocked) return;
       const e = event as DeviceOrientationEvent;
-      if (e.absolute && e.alpha !== null) {
-        this.compassHeading = e.alpha;
+      if (e.absolute && e.alpha !== null && e.beta !== null && e.gamma !== null) {
+        this.compassHeading = compassHeadingFromOrientation(e.alpha, e.beta, e.gamma);
       }
     };
     window.addEventListener('deviceorientationabsolute', this.absoluteCompassHandler);
@@ -159,9 +225,9 @@ export class DeviceOrientationController {
     if (this.northLocked) return;
 
     const compass = this.smoothedCompassHeading ?? this.compassHeading;
-    const compassRad =
-      compass !== null ? THREE.MathUtils.degToRad(compass) : null;
+    if (compass === null) return;
 
+    const compassRad = THREE.MathUtils.degToRad(compass);
     this.northLocked = true;
     if (this.absoluteCompassHandler) {
       window.removeEventListener('deviceorientationabsolute', this.absoluteCompassHandler);
@@ -180,12 +246,7 @@ export class DeviceOrientationController {
 
     this.northWarmup += 1;
 
-    const readyWithCompass =
-      hasCompass && this.northWarmup >= DeviceOrientationController.NORTH_WARMUP_FRAMES;
-    const readyWithoutCompass =
-      this.northWarmup >= DeviceOrientationController.NORTH_WARMUP_MAX_FRAMES;
-
-    if (readyWithCompass || readyWithoutCompass) {
+    if (hasCompass && this.northWarmup >= DeviceOrientationController.NORTH_WARMUP_FRAMES) {
       this.lockNorthHeading();
     }
   }
@@ -230,6 +291,14 @@ export class DeviceOrientationController {
 
     if (typeof e.webkitCompassHeading === 'number' && !Number.isNaN(e.webkitCompassHeading)) {
       this.compassHeading = e.webkitCompassHeading;
+    } else if (
+      e.absolute &&
+      e.alpha !== null &&
+      e.beta !== null &&
+      e.gamma !== null &&
+      !this.northLocked
+    ) {
+      this.compassHeading = compassHeadingFromOrientation(e.alpha, e.beta, e.gamma);
     }
   };
 }
@@ -241,6 +310,5 @@ export function isDeviceOrientationSupported(): boolean {
 export function getViewerYawRadians(camera: THREE.Camera): number {
   const worldQuaternion = new THREE.Quaternion();
   camera.getWorldQuaternion(worldQuaternion);
-  const forward = VIEW_FORWARD.clone().applyQuaternion(worldQuaternion);
-  return Math.atan2(forward.x, -forward.z);
+  return robustYawFromQuaternion(worldQuaternion);
 }
