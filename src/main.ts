@@ -4,6 +4,7 @@ import { createPhaseController } from './phases';
 import { createInputHandlers } from './input';
 import { createMessageOverlay } from './messageOverlay';
 import { createSkyModeController } from './sky/skyMode';
+import { HorizonVisual } from './sky/horizon';
 import type { SkyTapResult } from './sky/SkyScene';
 import {
   ARPlacement,
@@ -43,6 +44,8 @@ constellationScene.group.visible = false;
 scene.add(constellationScene.group);
 
 const skyMode = createSkyModeController();
+const horizonVisual = new HorizonVisual();
+horizonVisual.mount(scene);
 const placement = new ARPlacement(renderer, constellationScene.group);
 
 let appMode: AppMode = 'preview';
@@ -151,6 +154,30 @@ function updateSkyBanner(): void {
   previewBanner.textContent = skyMode.errorMessage ?? `${base} (${count} stars visible)`;
 }
 
+function syncHorizonVisual(): void {
+  if (!skyBackgroundActive) {
+    horizonVisual.setMode('hidden');
+    return;
+  }
+  if (appMode === 'sky') {
+    horizonVisual.setMode('sky');
+    horizonVisual.resetTransform();
+  } else if (appMode === 'ar') {
+    horizonVisual.setMode('ar');
+  } else {
+    horizonVisual.setMode('hidden');
+  }
+}
+
+function updateHorizonTransform(headCamera: THREE.Camera, inXr: boolean): void {
+  if (!horizonVisual.group.visible) return;
+  if (inXr) {
+    horizonVisual.followPosition(headCamera);
+  } else if (appMode === 'sky') {
+    horizonVisual.resetTransform();
+  }
+}
+
 async function enableSkyBackground(): Promise<void> {
   if (skyBackgroundActive) return;
 
@@ -161,6 +188,7 @@ async function enableSkyBackground(): Promise<void> {
   constellationScene.setPreviewBackground(scene, false);
 
   await skyMode.start(renderer.domElement);
+  syncHorizonVisual();
   updateSkyBanner();
 }
 
@@ -188,6 +216,7 @@ function disableSkyBackground(): void {
   skyMode.loversOverlay.detachFromCamera(camera);
   arNorthCaptureStartedAt = 0;
   skyBackgroundActive = false;
+  horizonVisual.setMode('hidden');
   camera.far = PREVIEW_FAR;
   camera.updateProjectionMatrix();
 }
@@ -270,6 +299,7 @@ async function enterSkyMode(): Promise<void> {
     ? 'Drag to look around. Tap stars to trace a constellation — lines appear as you join them.'
     : 'Drag to look around. Tap stars in the sky to trace constellations.';
   instructionEl.classList.remove('fade-out');
+  syncHorizonVisual();
   updateSkyBanner();
 }
 
@@ -310,6 +340,7 @@ async function enterARMode(): Promise<void> {
     ? 'Tap sky stars to trace a constellation. Tap the Lovers panel stars for the proposal.'
     : 'Look around and tap sky stars to trace constellations.';
   instructionEl.classList.remove('fade-out');
+  syncHorizonVisual();
   updateSkyBanner();
 }
 
@@ -324,6 +355,7 @@ function handleARSessionError(message: string): void {
   if (skyBackgroundActive) {
     skyMode.setLookActive(true);
     renderer.setClearColor(0x0a0d1a, 1);
+    syncHorizonVisual();
     updateSkyBanner();
   }
 }
@@ -364,12 +396,14 @@ function animate(): void {
           }
         }
         skyMode.followSkyToCamera(headCamera, true, scene);
+        updateHorizonTransform(headCamera, true);
         if (time % 2000 < 20) updateSkyBanner();
       }
     } else if (appMode === 'sky' && skyBackgroundActive) {
       skyMode.update(time, dt);
       skyMode.applyCameraOrientation(camera);
       skyMode.followSkyToCamera(camera, false, scene);
+      updateHorizonTransform(camera, false);
       if (time % 2000 < 20) updateSkyBanner();
     } else if (appMode === 'preview') {
       if (!previewPlaced) {

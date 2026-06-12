@@ -65,3 +65,18 @@ export function magnitudeToPointSize(mag: number): number {
   const size = 20 * Math.pow(10, -0.18 * mag);
   return THREE.MathUtils.clamp(size, 8, 28);
 }
+
+/** 0..1 opacity multiplier from altitude. Never reaches 0 — stars stay faintly visible below horizon. */
+export function horizonFadeFactor(altitudeDeg: number): number {
+  const FADE_FULL = 5;
+  const FADE_FLOOR = -18;
+  const MIN = 0.12;
+  if (altitudeDeg >= FADE_FULL) return 1;
+  if (altitudeDeg <= FADE_FLOOR) return MIN;
+  const t = (altitudeDeg - FADE_FLOOR) / (FADE_FULL - FADE_FLOOR);
+  return MIN + (1 - MIN) * t * t * (3 - 2 * t);
+}
+
+export function isAboveHorizon(altitudeDeg: number): boolean {
+  return altitudeDeg > 0;
+}

@@ -23,6 +23,7 @@ import {
   altAzToDirection,
   altAzToWorldPosition,
   createObserver,
+  horizonFadeFactor,
   magnitudeToPointSize,
   magnitudeToRadius,
   SKY_SPHERE_RADIUS,
@@ -79,6 +80,7 @@ interface StarEntry {
   glow: THREE.Mesh;
   hit: THREE.Mesh;
   baseGlowOpacity: number;
+  horizonFade: number;
 }
 
 interface LineEntry {
@@ -480,6 +482,7 @@ export class SkyScene {
         glow,
         hit,
         baseGlowOpacity: 1,
+        horizonFade: 1,
       });
       this.starById.set(star.id, this.starEntries[this.starEntries.length - 1]);
       this.starByHip.set(star.hip, this.starEntries[this.starEntries.length - 1]);
@@ -637,26 +640,36 @@ export class SkyScene {
     line.glow.position.copy(midpoint);
     line.glow.scale.set(1, Math.max(currentLength, 0.001), 1);
 
-    const visible =
-      line.mesh.userData.aboveHorizon === true && (this.showConstellations || progress > 0);
-    line.mesh.visible = visible;
-    line.glow.visible = visible;
+    const horizonFade = (line.mesh.userData.horizonFade as number) ?? 1;
+    const showLine =
+      (this.showConstellations || progress > 0) && horizonFade > 0.01;
+    line.mesh.visible = showLine;
+    line.glow.visible = showLine;
 
     const mat = line.mesh.material as THREE.MeshBasicMaterial;
     const glowMat = line.glow.material as THREE.MeshBasicMaterial;
-    mat.opacity = visible ? 1 : 0;
-    glowMat.opacity = visible ? 0.45 : 0;
+    mat.opacity = showLine ? horizonFade : 0;
+    glowMat.opacity = showLine ? 0.45 * horizonFade : 0;
+  }
+
+  private applyStarVisualOpacity(entry: StarEntry): void {
+    const idx = entry.index;
+    const fade = entry.horizonFade;
+    const boosted = entry.baseGlowOpacity * this.visualBoost * fade;
+    const isFound = this.foundStars.has(entry.star.id);
+    this.pointOpacities[idx] = isFound
+      ? Math.min(1, boosted * 1.4)
+      : Math.min(1, boosted);
+    const glowMat = entry.glow.material as THREE.MeshBasicMaterial;
+    glowMat.opacity = isFound
+      ? Math.min(1, entry.baseGlowOpacity * fade * 1.15)
+      : entry.baseGlowOpacity * fade;
   }
 
   private refreshStarBrightness(): void {
     for (const entry of this.starEntries) {
-      const idx = entry.index;
-      const isFound = this.foundStars.has(entry.star.id);
-      if (isFound) {
-        this.pointOpacities[idx] = Math.min(1, entry.baseGlowOpacity * 1.4);
-        const glowMat = entry.glow.material as THREE.MeshBasicMaterial;
-        glowMat.opacity = Math.min(1, entry.baseGlowOpacity * 1.2);
-      }
+      if (!this.foundStars.has(entry.star.id)) continue;
+      this.applyStarVisualOpacity(entry);
     }
     const opacityAttr = this.points?.geometry.getAttribute('opacity') as THREE.BufferAttribute | undefined;
     if (opacityAttr) opacityAttr.needsUpdate = true;
@@ -666,6 +679,7 @@ export class SkyScene {
     if (!force && this.starEntries.length === 0) return;
 
     const worldPositions = new Map<string, THREE.Vector3>();
+    const starAltitudes = new Map<string, number>();
     let visible = 0;
 
     for (const entry of this.starEntries) {
@@ -676,13 +690,14 @@ export class SkyScene {
         date,
       );
 
+      const fade = horizonFadeFactor(altitude);
+      entry.horizonFade = fade;
+      starAltitudes.set(entry.star.id, altitude);
+
       const idx = entry.index;
       const pointOpacity = 0.85 + 0.15 * (1.4 - entry.star.mag) / 1.4;
-      const boosted = pointOpacity * this.visualBoost;
-      this.pointOpacities[idx] = this.foundStars.has(entry.star.id)
-        ? Math.min(1, boosted * 1.4)
-        : Math.min(1, boosted);
       entry.baseGlowOpacity = pointOpacity;
+      this.applyStarVisualOpacity(entry);
 
       const pos = altAzToWorldPosition(azimuth, altitude, SKY_SPHERE_RADIUS);
       this.positions[idx * 3] = pos.x;
@@ -692,13 +707,9 @@ export class SkyScene {
 
       entry.glow.position.copy(pos);
       entry.hit.position.copy(pos);
-      const glowMat = entry.glow.material as THREE.MeshBasicMaterial;
-      glowMat.opacity = this.foundStars.has(entry.star.id)
-        ? Math.min(1, pointOpacity * 1.15)
-        : pointOpacity;
-      entry.glow.visible = true;
-      entry.hit.visible = true;
-      visible++;
+      entry.glow.visible = fade > 0.01;
+      entry.hit.visible = fade > 0.01;
+      if (fade > 0.01) visible++;
     }
 
     this.visibleStarCount = visible;
@@ -716,14 +727,21 @@ export class SkyScene {
       const from = worldPositions.get(startId);
       const to = worldPositions.get(endId);
       if (!from || !to) {
-        line.mesh.userData.aboveHorizon = false;
+        line.mesh.userData.horizonFade = 0;
         line.mesh.visible = false;
         line.glow.visible = false;
         continue;
       }
 
+      const fromAlt = starAltitudes.get(startId);
+      const toAlt = starAltitudes.get(endId);
+      const lineFade =
+        fromAlt !== undefined && toAlt !== undefined
+          ? Math.min(horizonFadeFactor(fromAlt), horizonFadeFactor(toAlt))
+          : 1;
+
       this.bindLineGeometry(line, from, to);
-      line.mesh.userData.aboveHorizon = true;
+      line.mesh.userData.horizonFade = lineFade;
       const progress = this.showConstellations ? 1 : line.progress;
       this.setLineProgress(line.lineKey, progress);
     }
@@ -751,7 +769,11 @@ export class SkyScene {
       const entry = this.illustrationByConstellation.get(constellationId);
       if (!entry) continue;
       entry.fade = 1;
-      setIllustrationOpacity(entry.mesh.material as IllustrationMaterial, ILLUSTRATION_MAX_OPACITY);
+      const horizonFade = (entry.mesh.userData.horizonFade as number) ?? 1;
+      setIllustrationOpacity(
+        entry.mesh.material as IllustrationMaterial,
+        ILLUSTRATION_MAX_OPACITY * horizonFade,
+      );
     }
   }
 
@@ -882,16 +904,20 @@ export class SkyScene {
 
     const speed = 1 / ILLUSTRATION_FADE_DURATION;
     for (const entry of this.illustrationByConstellation.values()) {
+      const horizonFade = (entry.mesh.userData.horizonFade as number) ?? 1;
       if (this.showConstellations) {
         entry.fade = 1;
-        setIllustrationOpacity(entry.mesh.material as IllustrationMaterial, ILLUSTRATION_MAX_OPACITY);
+        setIllustrationOpacity(
+          entry.mesh.material as IllustrationMaterial,
+          ILLUSTRATION_MAX_OPACITY * horizonFade,
+        );
         continue;
       }
       if (entry.fade >= 1) continue;
       entry.fade = Math.min(entry.fade + speed * dt, 1);
       setIllustrationOpacity(
         entry.mesh.material as IllustrationMaterial,
-        entry.fade * ILLUSTRATION_MAX_OPACITY,
+        entry.fade * ILLUSTRATION_MAX_OPACITY * horizonFade,
       );
     }
   }
@@ -931,6 +957,7 @@ export class SkyScene {
       this.illustrationHorDir2,
     ];
 
+    let minFade = 1;
     for (let i = 0; i < 3; i++) {
       const star = this.starByHip.get(anchors[i].hip);
       if (!star) return;
@@ -941,8 +968,10 @@ export class SkyScene {
         this.observer,
         date,
       );
+      minFade = Math.min(minFade, horizonFadeFactor(altitude));
       horDirs[i].copy(altAzToDirection(azimuth, altitude));
     }
+    mesh.userData.horizonFade = minFade;
 
     if (!computeEquatorialToHorizontalRotation(eqDirs, horDirs, this.illustrationEqToHor)) {
       return;
@@ -959,6 +988,8 @@ export class SkyScene {
       ILLUSTRATION_INSET,
       this.illustrationProjectScratch,
     );
+
+    setIllustrationOpacity(material, entry.fade * ILLUSTRATION_MAX_OPACITY * minFade);
   }
 
   private bindLineGeometry(line: LineEntry, from: THREE.Vector3, to: THREE.Vector3): void {
